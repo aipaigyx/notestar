@@ -819,13 +819,13 @@ export async function loadQuizData() {
 
 export async function persistQuizSessions() {
   if (!hasElectron) return
-  try { await window.noteAPI.quizSaveSessions(quizSessions.value) }
+  try { await window.noteAPI.quizSaveSessions(JSON.parse(JSON.stringify(quizSessions.value))) }
   catch (e) { frontendLogger.warn('Quiz', '保存题库失败', { err: String(e) }) }
 }
 
 export async function persistQuizMistakes() {
   if (!hasElectron) return
-  try { await window.noteAPI.quizSaveMistakes(quizMistakes.value) }
+  try { await window.noteAPI.quizSaveMistakes(JSON.parse(JSON.stringify(quizMistakes.value))) }
   catch (e) { frontendLogger.warn('Quiz', '保存错题本失败', { err: String(e) }) }
 }
 
@@ -833,7 +833,10 @@ export async function persistQuizMistakes() {
 export async function generateQuiz(opts: { noteIds?: string[]; courseIds?: string[]; count?: number; mock?: boolean }): Promise<QuizQuestion[]> {
   if (opts.mock) return buildMockQuiz(opts.count || 5)
   if (hasElectron) {
-    const res = await window.noteAPI.quizGenerate({ ...opts, count: opts.count || 10 })
+    // 关键：Vue 响应式 ref 的 .value 是 reactive Proxy，contextBridge 无法克隆（报 "An object could not be cloned"）
+    // 必须在渲染进程先把 Proxy 序列化为纯数据
+    const payload = JSON.parse(JSON.stringify({ ...opts, count: opts.count || 10 }))
+    const res = await window.noteAPI.quizGenerate(payload)
     return res.questions || []
   }
   throw new Error('浏览器模式不支持 AI 出题')
@@ -911,7 +914,7 @@ export async function loadQuizMastery() {
 
 export async function persistQuizMastery() {
   if (!hasElectron) return
-  try { await window.noteAPI.quizSaveMastery(quizMasteryMap.value) }
+  try { await window.noteAPI.quizSaveMastery(JSON.parse(JSON.stringify(quizMasteryMap.value))) }
   catch (e) { frontendLogger.warn('Quiz', '保存掌握度失败', { err: String(e) }) }
 }
 

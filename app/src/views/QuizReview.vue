@@ -526,7 +526,9 @@ const doGenerate = async () => {
   if (!selectedCourses.value.length) { showToast('请先选择复习范围', 'warn'); return }
   generating.value = true; generateMsg.value = ''; generateErr.value = false
   try {
+    console.log('[Quiz] 调用前', JSON.stringify({ courseIds: selectedCourses.value, count: qCount.value, hasElectron: !!window.noteAPI }))
     let qs = await generateQuiz({ courseIds: selectedCourses.value, count: qCount.value })
+    console.log('[Quiz] 调用成功', qs.length, '题')
     if (!qs.length) throw new Error('没有生成到题目')
     if (dedupEnabled.value) {
       const masteredIds = new Set(Object.entries(quizMasteryMap.value).filter(([, s]) => s.mastery === 'mastered' && s.nextReviewAt && s.nextReviewAt > new Date().toISOString()).map(([id]) => id))
@@ -540,6 +542,7 @@ const doGenerate = async () => {
     usedProvider.value = ''; fromMistakes.value = false
     phase.value = 'quiz'; startTimer()
   } catch (e: any) {
+    console.error('[Quiz] doGenerate error:', e?.message, '|name:', e?.name, '|stack:', (e?.stack || '').slice(0, 600))
     generateErr.value = true
     generateMsg.value = e?.message || '出题失败，请重试'
   } finally { generating.value = false }

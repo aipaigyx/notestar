@@ -1448,7 +1448,15 @@ ipcMain.handle('quiz:generate', async (event, { noteIds = [], courseIds = [], co
 
   if (okQuestions.length === 0) throw new Error('生成的题目未能通过答案溯源校验（答案需能在笔记原文中找到），请重试')
   logger.info('Quiz', '出题成功', { rawCount: parsed.questions.length, okCount: okQuestions.length, provider: usedProvider })
-  return { questions: okQuestions.slice(0, qCount), provider: usedProvider }
+  const result = { questions: okQuestions.slice(0, qCount), provider: usedProvider }
+  // 序列化测试：排查 "An object could not be cloned"
+  try {
+    const json = JSON.stringify(result)
+    logger.info('Quiz', '返回前序列化测试通过', { bytes: json.length })
+  } catch (e) {
+    logger.error('Quiz', '返回对象不可序列化！', { err: e.message })
+  }
+  return result
 })
 
 // ========== IPC: 日志系统（被删后重建） ==========
@@ -1672,6 +1680,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
 }).catch((error) => {
   logger.error('Main', 'Electron 初始化失败', { message: error.message, stack: error.stack })
   dialog.showErrorBox('应用启动失败', `初始化过程中发生错误：${error.message}`)
