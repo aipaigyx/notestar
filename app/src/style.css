@@ -1,0 +1,467 @@
+:root {
+  --color-bg: #F6F1FB;
+  --color-white: #FFFFFF;
+  --color-pink: #FF6B9D;
+  --color-pink-light: rgba(255, 107, 157, 0.12);
+  --color-pink-light-2: rgba(255, 107, 157, 0.08);
+  --color-purple: #B794F6;
+  --color-purple-light: rgba(183, 148, 246, 0.12);
+  --color-blue: #4292F5;
+  --color-blue-light: rgba(66, 146, 245, 0.08);
+  --color-sakura: #FFC0D5;      /* 樱花粉 */
+  --color-sakura-light: rgba(255, 192, 213, 0.35);
+  --color-mint: #7BE0C3;        /* 薄荷 */
+  --color-text: #3A2D54;
+  --color-text-secondary: #6B6B96;
+  --color-text-tertiary: #9B9BB5;
+  --color-text-muted: #B8B8CC;
+  --color-border: #F0E4F5;
+  --color-border-light: #F5EEF9;
+  --color-bg-card: #FFFFFF;
+  --color-bg-soft: #F6F1FB;
+  --color-bg-input: #FAF7FD;
+
+  --font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 2px 10px rgba(183, 148, 246, 0.1);
+  --shadow-md: 0 6px 20px rgba(183, 148, 246, 0.12);
+  --shadow-pink: 0 6px 16px rgba(255, 107, 157, 0.22);
+  --shadow-glow: 0 0 0 3px rgba(255, 192, 213, 0.25);
+
+  --gradient-pink-purple: linear-gradient(135deg, #FF6B9D 0%, #B794F6 100%);
+  --gradient-pink-blue: linear-gradient(135deg, #FF6B9D 0%, #6B87FF 100%);
+  --gradient-purple-blue: linear-gradient(135deg, #B794F6 0%, #6B87FF 100%);
+  --gradient-orange-pink: linear-gradient(135deg, #FF9948 0%, #FF6B9D 100%);
+  --gradient-sakura: linear-gradient(135deg, #FFC0D5 0%, #B794F6 100%);
+}
+
+/* ========== 暗黑模式 ========== */
+:root[data-theme="dark"] {
+  --color-bg: #1A1525;
+  --color-white: #252038;
+  --color-pink: #FF8BB5;
+  --color-pink-light: rgba(255, 139, 181, 0.15);
+  --color-pink-light-2: rgba(255, 139, 181, 0.1);
+  --color-purple: #C9A8FF;
+  --color-purple-light: rgba(201, 168, 255, 0.15);
+  --color-blue: #5BA3F7;
+  --color-blue-light: rgba(91, 163, 247, 0.12);
+  --color-sakura: #C97E9E;
+  --color-sakura-light: rgba(201, 126, 158, 0.25);
+  --color-mint: #4FAF95;
+  --color-text: #E8E4F0;
+  --color-text-secondary: #A8A0C0;
+  --color-text-tertiary: #7B7395;
+  --color-text-muted: #5A5470;
+  --color-border: #342E48;
+  --color-border-light: #2A2440;
+  --color-bg-card: #252038;
+  --color-bg-soft: #1F1A30;
+  --color-bg-input: #1F1A30;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-pink: 0 4px 12px rgba(255, 139, 181, 0.2);
+  --shadow-glow: 0 0 0 3px rgba(201, 126, 158, 0.3);
+}
+
+:root[data-theme="dark"] body {
+  background: var(--color-bg);
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(183, 148, 246, 0.2);
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(183, 148, 246, 0.4);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(183, 148, 246, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(183, 148, 246, 0.5);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  background: none;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  outline: none;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+select {
+  -webkit-appearance: menulist;
+  appearance: menulist;
+}
+
+/* 确保 input 和 textarea 可以获得焦点 */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+img {
+  display: block;
+}
+
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.page-view {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Decorative glow orbs */
+.glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-pink {
+  background: radial-gradient(circle, rgba(255, 143, 150, 0.55) 0%, rgba(255, 143, 150, 0) 100%);
+}
+
+.glow-blue {
+  background: radial-gradient(circle, rgba(136, 148, 255, 0.5) 0%, rgba(136, 148, 255, 0) 100%);
+}
+
+.glow-purple {
+  background: radial-gradient(circle, rgba(239, 141, 255, 0.45) 0%, rgba(239, 141, 255, 0) 100%);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* ========== 二次元萌系治愈：全局背景与通用组件 ========== */
+body {
+  background:
+    radial-gradient(600px 400px at 85% -10%, rgba(255, 192, 213, 0.35) 0%, transparent 60%),
+    radial-gradient(700px 500px at -10% 90%, rgba(183, 148, 246, 0.3) 0%, transparent 60%),
+    linear-gradient(160deg, #F8F2FC 0%, #F6F1FB 45%, #F2F3FC 100%);
+  background-attachment: fixed;
+}
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(600px 400px at 85% -10%, rgba(201, 126, 158, 0.15) 0%, transparent 60%),
+    radial-gradient(700px 500px at -10% 90%, rgba(150, 110, 220, 0.18) 0%, transparent 60%),
+    linear-gradient(160deg, #1A1525 0%, #1C1729 45%, #191827 100%);
+  background-attachment: fixed;
+}
+
+/* ========== 派蒙主题（蓝白星空 · 原神派蒙风） ==========
+   复用同一套 CSS 变量名，仅替换取值，所有组件自动换色零改动。 */
+:root[data-theme="paimon"] {
+  --color-bg: #EAF4FE;
+  --color-white: #FFFFFF;
+  --color-pink: #6FA8F0;                 /* 派蒙裙摆蓝 */
+  --color-pink-light: rgba(111, 168, 240, 0.14);
+  --color-pink-light-2: rgba(111, 168, 240, 0.08);
+  --color-purple: #8CC9FF;               /* 浅天蓝 */
+  --color-purple-light: rgba(140, 201, 255, 0.16);
+  --color-blue: #FFD966;                 /* 派蒙星金 */
+  --color-blue-light: rgba(255, 217, 102, 0.14);
+  --color-sakura: #BDE3FF;               /* 冰蓝 */
+  --color-sakura-light: rgba(189, 227, 255, 0.4);
+  --color-mint: #7BE0C3;
+  --color-text: #2C3E6B;                 /* 深星蓝 */
+  --color-text-secondary: #5A7BA8;
+  --color-text-tertiary: #8AA6C8;
+  --color-text-muted: #A9C2DA;
+  --color-border: #D9EAFB;
+  --color-border-light: #E4F0FC;
+  --color-bg-card: #FFFFFF;
+  --color-bg-soft: #EAF4FE;
+  --color-bg-input: #F2F8FE;
+
+  --shadow-sm: 0 2px 10px rgba(111, 168, 240, 0.12);
+  --shadow-md: 0 6px 20px rgba(111, 168, 240, 0.16);
+  --shadow-pink: 0 6px 16px rgba(111, 168, 240, 0.25);
+  --shadow-glow: 0 0 0 3px rgba(189, 227, 255, 0.5);
+
+  --gradient-pink-purple: linear-gradient(135deg, #6FA8F0 0%, #8CC9FF 100%);
+  --gradient-pink-blue: linear-gradient(135deg, #6FA8F0 0%, #FFD966 100%);
+  --gradient-purple-blue: linear-gradient(135deg, #8CC9FF 0%, #6FA8F0 100%);
+  --gradient-orange-pink: linear-gradient(135deg, #FFD966 0%, #6FA8F0 100%);
+  --gradient-sakura: linear-gradient(135deg, #BDE3FF 0%, #8CC9FF 100%);
+}
+
+:root[data-theme="paimon"] body {
+  background:
+    radial-gradient(600px 400px at 85% -10%, rgba(189, 227, 255, 0.6) 0%, transparent 60%),
+    radial-gradient(700px 500px at -10% 90%, rgba(255, 217, 102, 0.28) 0%, transparent 60%),
+    linear-gradient(160deg, #F0F8FF 0%, #EAF4FE 45%, #EDF3FD 100%);
+  background-attachment: fixed;
+}
+
+/* 派蒙主题星星装饰背景 */
+:root[data-theme="paimon"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(2px 2px at 12% 22%, rgba(255, 217, 102, 0.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 28% 65%, rgba(111, 168, 240, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 45% 15%, rgba(255, 217, 102, 0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 62% 42%, rgba(111, 168, 240, 0.45) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 78% 70%, rgba(255, 217, 102, 0.55) 0%, transparent 100%),
+    radial-gradient(2px 2px at 90% 20%, rgba(111, 168, 240, 0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 8% 85%, rgba(255, 217, 102, 0.45) 0%, transparent 100%),
+    radial-gradient(2px 2px at 55% 88%, rgba(111, 168, 240, 0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 92%, rgba(255, 217, 102, 0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 33% 38%, rgba(255, 217, 102, 0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 70% 8%, rgba(111, 168, 240, 0.45) 0%, transparent 100%),
+    radial-gradient(2px 2px at 93% 55%, rgba(255, 217, 102, 0.4) 0%, transparent 100%);
+  animation: starTwinkle 3.5s ease-in-out infinite alternate;
+}
+@keyframes starTwinkle {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+:root[data-theme="paimon"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(111, 168, 240, 0.45), rgba(140, 201, 255, 0.45));
+}
+:root[data-theme="paimon"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(111, 168, 240, 0.7), rgba(140, 201, 255, 0.7));
+}
+
+/* 派蒙主题 Logo 星星点缀 */
+:root[data-theme="paimon"] .logo-icon {
+  position: relative;
+}
+:root[data-theme="paimon"] .logo-icon::after {
+  content: '✦';
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  font-size: 13px;
+  color: #FFD966;
+  text-shadow: 0 0 6px rgba(255, 217, 102, 0.8);
+  animation: starSpin 6s linear infinite;
+}
+@keyframes starSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 萌系卡片：白底大圆角 + 粉紫柔和阴影 + 顶部高光 */
+.anime-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 192, 213, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.anime-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, transparent 50%);
+  pointer-events: none;
+}
+.anime-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(183, 148, 246, 0.18); }
+
+/* 萌系胶囊按钮：渐变 + 光晕 */
+.anime-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-pink-purple);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 14px rgba(255, 107, 157, 0.3);
+  transition: all 0.2s ease;
+}
+.anime-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4); }
+.anime-btn:active { transform: translateY(0) scale(0.97); }
+.anime-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* 萌系幽灵按钮 */
+.anime-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1.5px solid rgba(255, 192, 213, 0.6);
+  color: var(--color-pink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.anime-btn-ghost:hover { background: var(--color-pink-light); border-color: var(--color-pink); }
+.anime-btn-ghost:active { transform: scale(0.97); }
+
+/* 萌系胶囊标签 */
+.anime-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-pink-light);
+  border: 1px solid rgba(255, 107, 157, 0.2);
+  color: var(--color-pink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 输入框聚焦光晕 */
+input:focus-visible, textarea:focus-visible {
+  box-shadow: var(--shadow-glow);
+}
+
+/* 萌系飘浮动画（装饰元素） */
+@keyframes anime-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes anime-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+.anime-float { animation: anime-float 5s ease-in-out infinite; }
+.anime-pulse { animation: anime-pulse 2.5s ease-in-out infinite; }
+
+/* 滚动条更粉嫩 */
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(255, 107, 157, 0.35), rgba(183, 148, 246, 0.35)); }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(255, 107, 157, 0.55), rgba(183, 148, 246, 0.55)); }
+
+/* 搜索命中高亮 */
+mark.hl {
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.25), rgba(183, 148, 246, 0.25));
+  color: var(--color-pink);
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* ===== AI 卡片（追加到笔记的分析/扩展内容）===== */
+.ai-card {
+  margin: 18px 0;
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(183, 148, 246, 0.35);
+  background: linear-gradient(150deg, rgba(255, 107, 157, 0.07), rgba(183, 148, 246, 0.10));
+  box-shadow: 0 6px 20px rgba(107, 134, 255, 0.10);
+}
+.ai-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(120deg, rgba(255, 107, 157, 0.16), rgba(183, 148, 246, 0.16));
+  border-bottom: 1px solid rgba(183, 148, 246, 0.22);
+}
+.ai-card-icon { font-size: 18px; line-height: 1; }
+.ai-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-pink);
+  flex: 1;
+}
+.ai-card-time {
+  font-size: 12px;
+  color: var(--color-text-3, #9b9bb5);
+  white-space: nowrap;
+}
+.ai-card-body {
+  padding: 14px 16px 16px;
+  line-height: 1.75;
+}
+.ai-card-body > :first-child { margin-top: 0; }
+.ai-card-body > :last-child { margin-bottom: 0; }
+.ai-card-body h1, .ai-card-body h2, .ai-card-body h3, .ai-card-body h4 {
+  margin: 12px 0 6px;
+  font-size: 15px;
+  color: var(--color-purple);
+}
+.ai-card-body ul, .ai-card-body ol { margin: 6px 0; padding-left: 20px; }
+.ai-card-body li { margin: 3px 0; }
+.ai-card-body p { margin: 6px 0; }
+.ai-card-body code {
+  background: rgba(183, 148, 246, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.92em;
+  color: var(--color-pink);
+}

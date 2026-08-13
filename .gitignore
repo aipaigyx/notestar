@@ -1,0 +1,31 @@
+# 依赖与构建产物
+node_modules/
+app/node_modules/
+app/dist/
+app/dist-old-*/
+dist/
+
+# 运行时数据与日志
+app/data/
+app/logs/
+logs/
+
+# 内置运行时环境（whisper 模型 / 本地模型 / python）
+app/vendor/
+Ollama/
+
+# 旧版本备份目录
+app2/
+
+# 调试与临时
+.workbuddy/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
+
+# 系统与 IDE
+.vscode/
+.idea/
+app/debug.log
