@@ -830,7 +830,7 @@ export async function persistQuizMistakes() {
 }
 
 // AI 生成题目（云端优先，主进程内自动回退本地 qwen）
-export async function generateQuiz(opts: { noteIds?: string[]; courseIds?: string[]; count?: number; mock?: boolean }): Promise<QuizQuestion[]> {
+export async function generateQuiz(opts: { noteIds?: string[]; courseIds?: string[]; count?: number; mock?: boolean; provider?: 'auto' | 'cloud' | 'local' }): Promise<QuizQuestion[]> {
   if (opts.mock) return buildMockQuiz(opts.count || 5)
   if (hasElectron) {
     // 关键：Vue 响应式 ref 的 .value 是 reactive Proxy，contextBridge 无法克隆（报 "An object could not be cloned"）

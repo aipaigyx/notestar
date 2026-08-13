@@ -155,8 +155,19 @@
           <div class="step">
             <span class="step-num">3</span>
             <div class="step-body">
-              <div class="step-label">高级选项</div>
-              <div class="toggle-row">
+              <div class="step-label">出题来源</div>
+              <div class="provider-row">
+                <button class="provider-btn" :class="{ active: quizProvider === 'auto' }" @click="quizProvider = 'auto'">
+                  <span class="p-icon">⚡</span><span class="p-name">自动</span><span class="p-desc">云端优先，失败自动回退本地</span>
+                </button>
+                <button class="provider-btn" :class="{ active: quizProvider === 'cloud' }" @click="quizProvider = 'cloud'">
+                  <span class="p-icon">☁️</span><span class="p-name">云端</span><span class="p-desc">DeepSeek 等，快但需网络</span>
+                </button>
+                <button class="provider-btn" :class="{ active: quizProvider === 'local' }" @click="quizProvider = 'local'">
+                  <span class="p-icon">💻</span><span class="p-name">本地</span><span class="p-desc">qwen 本地模型，免费不卡</span>
+                </button>
+              </div>
+              <div class="toggle-row" style="margin-top: 12px;">
                 <label class="toggle-switch">
                   <input type="checkbox" v-model="shuffleEnabled" />
                   <span class="track"><span class="thumb"></span></span>
@@ -373,6 +384,7 @@ const selectedCourses = ref<string[]>([])
 const qCount = ref(10)
 const shuffleEnabled = ref(false)
 const dedupEnabled = ref(false)
+const quizProvider = ref<'auto' | 'cloud' | 'local'>('auto')
 const generating = ref(false)
 const generateMsg = ref('')
 const generateErr = ref(false)
@@ -527,7 +539,7 @@ const doGenerate = async () => {
   generating.value = true; generateMsg.value = ''; generateErr.value = false
   try {
     console.log('[Quiz] 调用前', JSON.stringify({ courseIds: selectedCourses.value, count: qCount.value, hasElectron: !!window.noteAPI }))
-    let qs = await generateQuiz({ courseIds: selectedCourses.value, count: qCount.value })
+    let qs = await generateQuiz({ courseIds: selectedCourses.value, count: qCount.value, provider: quizProvider.value })
     console.log('[Quiz] 调用成功', qs.length, '题')
     if (!qs.length) throw new Error('没有生成到题目')
     if (dedupEnabled.value) {
@@ -924,6 +936,24 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .seg-btn.active strong, .seg-btn.active small { color: #fff; }
 
 .toggle-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.provider-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 2px; }
+.provider-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 12px 14px; background: #fff;
+  border: 1.5px solid #EBE5F4; border-radius: 14px;
+  cursor: pointer; text-align: left;
+  transition: all 0.18s;
+}
+.provider-btn:hover { border-color: #B794F6; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(183,148,246,0.14); }
+.provider-btn.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(255,107,157,0.1), rgba(183,148,246,0.1));
+  box-shadow: 0 0 0 2px #FF6B9D inset;
+}
+.p-icon { font-size: 16px; line-height: 1.3; }
+.p-name { font-size: 13px; font-weight: 700; color: #2D2541; }
+.p-desc { font-size: 10px; color: #9088A8; line-height: 1.4; }
+.provider-btn.active .p-name { color: #FF6B9D; }
 .toggle-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #2D2541; }
 .toggle-switch input { display: none; }
 .toggle-switch .track {

@@ -349,7 +349,7 @@ declare global {
       quizGetSessions: () => Promise<QuizSession[]>
       quizSaveMistakes: (mistakes: QuizMistake[]) => Promise<boolean>
       quizGetMistakes: () => Promise<QuizMistake[]>
-      quizGenerate: (opts: { noteIds?: string[]; courseIds?: string[]; count?: number }) => Promise<{ questions: QuizQuestion[]; provider: string }>
+      quizGenerate: (opts: { noteIds?: string[]; courseIds?: string[]; count?: number; provider?: 'auto' | 'cloud' | 'local' }) => Promise<{ questions: QuizQuestion[]; provider: string }>
       quizSaveMastery: (mastery: QuizMasteryMap) => Promise<boolean>
       quizGetMastery: () => Promise<QuizMasteryMap>
       quizExportHtml: (opts: { title: string; items: { question: string; answer: string; myAnswer: string; explanation: string; source: string; typeLabel?: string; difficulty?: string; correct: boolean }[] }) => Promise<string | null>

@@ -1302,9 +1302,9 @@ h1{color:#FF6B9D;border-bottom:2px solid rgba(255,107,157,.3);padding-bottom:10p
 })
 
 // ========== IPC: AI 生成复习题 ==========
-// 云端优先（跟随设置）；云端不可用（无 Key/失败）自动回退本地 qwen
+// 出题通道：provider = 'auto'（云端优先，失败回退本地）| 'cloud'（只走云端）| 'local'（只走本地 qwen）
 // 题目与答案必须可溯源：解析后校验答案能在笔记原文中找到，否则剔除
-ipcMain.handle('quiz:generate', async (event, { noteIds = [], courseIds = [], count = 10, mock = false }) => {
+ipcMain.handle('quiz:generate', async (event, { noteIds = [], courseIds = [], count = 10, mock = false, provider = 'auto' }) => {
   if (mock) return { questions: buildMockQuiz(count), provider: 'mock' }
   const allNotes = readJSON(notesFile, []).filter(n => !n.deletedAt)
   let targets = allNotes
@@ -1344,16 +1344,31 @@ ipcMain.handle('quiz:generate', async (event, { noteIds = [], courseIds = [], co
   const settings = readSettings()
   const makeFallbackSettings = (s) => ({ ...s, provider: 'local', model: 'qwen2.5:7b-instruct', apiKey: '' })
 
-  // 尝试调用：云端优先，失败回退本地
+  // 尝试调用：按用户选择的出题通道执行
   const tryGenerate = async (cfg) => {
     return await callAIWithRetry(cfg, messages, null, { outputTokens: 4096, operation: 'quiz' })
   }
 
   let raw = ''
   let usedProvider = settings.provider || 'deepseek'
+  const mode = String(provider || 'auto').toLowerCase()
   try {
-    raw = await tryGenerate(settings)
+    if (mode === 'local') {
+      // 只走本地 qwen：完全绕开云端
+      raw = await tryGenerate(makeFallbackSettings(settings))
+      usedProvider = 'local'
+    } else if (mode === 'cloud') {
+      // 只走云端（跟随设置中的云端 provider）
+      if (!settings.apiKey) throw new Error('云端出题需要先配置 API Key（设置页）')
+      raw = await tryGenerate(settings)
+    } else {
+      // auto：云端优先，失败回退本地
+      raw = await tryGenerate(settings)
+    }
   } catch (e) {
+    if (mode === 'local' || mode === 'cloud') {
+      throw new Error(`AI 出题失败（${mode === 'local' ? '本地' : '云端'}通道）：${e.message}`)
+    }
     if (settings.provider !== 'local') {
       logger.info('Quiz', '云端出题失败，回退本地', { err: e.message })
       try {
