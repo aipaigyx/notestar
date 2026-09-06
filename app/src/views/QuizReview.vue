@@ -179,7 +179,24 @@
                   <span class="t-label">⏭ 跳过已掌握</span>
                 </label>
               </div>
-              <p class="hint">题型自动混合：单选 · 多选 · 填空 · 判断 · 匹配</p>
+              <!-- 举一反三：基于笔记知识点拓展出题 -->
+              <div class="extend-box" :class="{ on: extendEnabled }">
+                <div class="extend-head">
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="extendEnabled" />
+                    <span class="track"><span class="thumb"></span></span>
+                    <span class="t-label">💡 举一反三</span>
+                  </label>
+                  <span class="extend-desc">基于笔记知识点拓展变式题（场景应用 / 思路变换），不脱离原文依据</span>
+                </div>
+                <div v-if="extendEnabled" class="extend-ratio">
+                  <span class="er-label">拓展题占比</span>
+                  <button v-for="r in [20, 30, 40]" :key="r" class="er-btn" :class="{ active: extendRatio === r / 100 }" @click="extendRatio = r / 100">
+                    <strong>{{ r }}%</strong>
+                  </button>
+                </div>
+              </div>
+              <p class="hint">题型自动混合：单选 · 多选 · 填空 · 判断 · 匹配 · 排序</p>
             </div>
           </div>
 
@@ -231,12 +248,19 @@
           <div class="q-head">
             <div class="q-tags">
               <span class="q-type" :class="currentQ.type">{{ typeLabel }}</span>
+              <span v-if="currentQ.kind === 'extend'" class="q-kind">💡 举一反三</span>
               <span v-if="currentQ.difficulty" class="q-diff" :class="currentQ.difficulty">{{ diffLabel }}度</span>
               <span class="q-from" @click="gotoSource" title="点击查看原文">📄 {{ shortSource }}</span>
             </div>
           </div>
 
           <h2 class="q-text">{{ currentQ.question }}</h2>
+
+          <!-- 举一反三：依据的知识点原文（溯源） -->
+          <div v-if="currentQ.kind === 'extend' && currentQ.basis" class="q-basis">
+            <span class="qb-tag">📎 依据知识点</span>
+            <span class="qb-text">{{ currentQ.basis }}</span>
+          </div>
 
           <!-- 单选 -->
           <div v-if="currentQ.type === 'choice'" class="opt-stack">
@@ -283,6 +307,49 @@
             <button v-if="!answered" class="submit-pill" @click="submitMatch" :disabled="matchIncomplete">提交答案</button>
           </div>
 
+          <!-- 排序 -->
+          <div v-else-if="currentQ.type === 'sort'" class="sort-stack">
+            <!-- 首次玩法引导（全局只弹一次，可关） -->
+            <transition name="fb">
+              <div v-if="showSortGuide" class="sort-guide">
+                <span class="sg-mark">🎲</span>
+                <span class="sg-text">首次遇到排序题：下方 A/B/C/D 是<em>打乱顺序的步骤</em>，按正确先后顺序<em>依次点击</em>——会自动落入下方第 1、2、3… 步格子；点错了，点击已填格子即可撤销重排。</span>
+                <button class="sg-dismiss" @click="dismissSortGuide">知道了</button>
+              </div>
+            </transition>
+
+            <div class="sort-tip" :class="{ done: !sortRemaining.length && !answered }">
+              <template v-if="sortPicked.length">
+                <template v-if="sortRemaining.length">已排 {{ sortPicked.length }}/{{ sortStepCount }} 步，继续点击候选填入第 {{ sortPicked.length + 1 }} 步</template>
+                <template v-else-if="!answered">✔ 已全部排入，可提交答案</template>
+                <template v-else>你的排序（点击格子或下方反馈查看正误）</template>
+              </template>
+              <template v-else>请把步骤按先后顺序填入下方 {{ sortStepCount }} 个格子（点击候选步骤即可）</template>
+            </div>
+
+            <!-- 槽位作答区：第 1~N 步空格，点击候选自动落入下一个空格 -->
+            <div class="sort-slots">
+              <div v-for="n in sortStepCount" :key="n" class="sort-slot" :class="sortSlotClass(n - 1)"
+                :title="sortPicked[n - 1] ? '点击撤销此步' : (n - 1 === sortPicked.length && !answered ? '此步待填：点击下方候选步骤即可' : '')"
+                @click="sortSlotClick(n - 1)">
+                <span class="ss-idx">{{ n }}</span>
+                <span v-if="sortPicked[n - 1]" class="ss-text">{{ sortPicked[n - 1] }}</span>
+                <span v-else class="ss-empty">{{ n - 1 === sortPicked.length && !answered ? '待填，点下方候选 →' : '待填' }}</span>
+                <span v-if="sortPicked[n - 1] && !answered" class="ss-x" title="点击撤销">✕</span>
+              </div>
+            </div>
+
+            <div class="sort-candidates">
+              <button v-for="(step, i) in sortRemaining" :key="i" class="sort-cand" :disabled="answered" @click="sortPick(step)">
+                <span class="sc-idx">{{ 'ABCD'[i] }}</span>
+                <span class="sc-text">{{ step }}</span>
+                <span v-if="!answered" class="sc-go">填入第 {{ sortPicked.length + 1 }} 步 →</span>
+              </button>
+              <div v-if="!sortRemaining.length && !answered" class="sort-done">✔ 全部排好，点下方按钮提交</div>
+            </div>
+            <button v-if="!answered" class="submit-pill" @click="submitSort" :disabled="sortIncomplete">提交答案</button>
+          </div>
+
           <!-- 反馈 -->
           <transition name="fb">
             <div v-if="answered" class="q-feedback" :class="isCorrect ? 'fb-right' : 'fb-wrong'">
@@ -290,8 +357,11 @@
                 <span class="fb-icon">{{ isCorrect ? '✓' : '✕' }}</span>
                 {{ isCorrect ? '答对了，太棒了！' : '答错了，再来一次' }}
               </div>
-              <div v-if="currentQ.type === 'multi' && !isCorrect" class="fb-mine">你的答案：<b>{{ userAnswer || '未选' }}</b> · 正确答案：<b>{{ currentQ.answer }}</b></div>
-              <div v-if="currentQ.type === 'match' && !isCorrect" class="fb-mine">正确答案：<b>{{ correctMatchHint }}</b></div>
+              <div v-if="!isCorrect" class="fb-mine">
+                你的答案：<b>{{ userAnswer || '未答' }}</b>
+                <template v-if="currentQ.type !== 'judge'"> · 正确答案：<b>{{ formatAnswer(currentQ) }}</b></template>
+              </div>
+              <div v-if="currentQ.type === 'match' && !isCorrect" class="fb-mine">配对：<b>{{ correctMatchHint }}</b></div>
               <div class="fb-explain"><span>解析</span>{{ currentQ.explanation }}</div>
               <div class="fb-source"><span>出处</span>{{ currentQ.source }}</div>
             </div>
@@ -346,12 +416,14 @@
               <div class="r-body">
                 <div class="r-q">
                   <span class="q-pill-mini" :class="q.type">{{ typeLabelAt(i) }}</span>
+                  <span v-if="q.kind === 'extend'" class="q-pill-mini extend">举一反三</span>
                   {{ q.question }}
                   <em class="r-time" v-if="perQuestionSec[i]">⏱ {{ formatTime(perQuestionSec[i]) }}</em>
                 </div>
+                <div v-if="q.kind === 'extend' && q.basis" class="r-basis">📎 依据：{{ q.basis }}</div>
                 <div class="r-meta">
                   我的答案：<b>{{ answers[i] || '未答' }}</b>
-                  <span v-if="!isCorrectAt(i)" class="r-correct">正确答案：<b>{{ q.answer }}</b></span>
+                  <span v-if="!isCorrectAt(i)" class="r-correct">正确答案：<b>{{ formatAnswer(q) }}</b></span>
                   <span v-else class="r-ok">✓</span>
                 </div>
                 <div class="r-src">📄 {{ q.source }}</div>
@@ -365,7 +437,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   notes, courses, quizSessions, quizMistakes, quizMasteryMap,
@@ -374,6 +446,7 @@ import {
   masteryStats, applySessionMastery,
 } from '../store'
 import { showToast, showAlert } from '../composables/useDialog'
+import { erode, revive, heirName } from '../store/titanErosion'
 import type { QuizQuestion, QuizSession } from '../types'
 
 const router = useRouter()
@@ -385,9 +458,12 @@ const qCount = ref(10)
 const shuffleEnabled = ref(false)
 const dedupEnabled = ref(false)
 const quizProvider = ref<'auto' | 'cloud' | 'local'>('auto')
+const extendEnabled = ref(true)        // 举一反三开关
+const extendRatio = ref(0.3)           // 拓展题占比 20%/30%/40%
 const generating = ref(false)
 const generateMsg = ref('')
 const generateErr = ref(false)
+let noticeCleanup: (() => void) | undefined
 
 const questions = ref<QuizQuestion[]>([])
 const answers = ref<(string | null)[]>([])
@@ -395,6 +471,10 @@ const currentIdx = ref(0)
 const blankInput = ref('')
 const multiPicked = ref<string[]>([])
 const matchAnswers = ref<string[]>([])
+const sortPicked = ref<string[]>([])        // 排序题：已排入序列的步骤（正确顺序）
+const sortRemaining = ref<string[]>([])     // 排序题：待排候选步骤（打乱顺序）
+const sortGuideDismissed = ref(false)       // 排序题首次玩法引导：是否已关闭（localStorage 全局记忆）
+const SORT_GUIDE_KEY = 'notestar_quiz_sort_guide_v1'
 const sessionTitle = ref('')
 const usedProvider = ref('')
 const fromMistakes = ref(false)
@@ -412,10 +492,32 @@ const canGenerate = computed(() => selectedCourses.value.length > 0)
 
 const currentQ = computed(() => questions.value[currentIdx.value] || null)
 const answered = computed(() => answers.value[currentIdx.value] != null)
+
+// —— 黑潮侵蚀联动：每答一题（answered 由 false→true）即驱动黄金裔牌状态 ——
+// 答错：黑潮侵蚀 +10%（=1 道错题），并触发实时涌动动效
+// 答对：累计连对，每 10 连对逐火复苏 1 张最濒危的黄金裔
+const correctStreak = ref(0)
+watch(
+  () => answered.value,
+  (v) => {
+    if (!v) return
+    if (isCorrectAt(currentIdx.value)) {
+      correctStreak.value++
+      if (correctStreak.value % 10 === 0) {
+        const id = revive(10)
+        if (id) showToast(`逐火复苏 · ${heirName(id)} 重燃火种`, 'success')
+      }
+    } else {
+      correctStreak.value = 0
+      const id = erode(10)
+      if (id) showToast(`黑潮涌动 · ${heirName(id)} 被侵蚀`, 'warn')
+    }
+  }
+)
 const userAnswer = computed(() => answers.value[currentIdx.value] || '')
 const isCorrect = computed(() => isCorrectAt(currentIdx.value))
 const progress = computed(() => questions.value.length ? ((currentIdx.value + (answered.value ? 1 : 0)) / questions.value.length) * 100 : 0)
-const typeLabel = computed(() => ({ choice: '单选', blank: '填空', judge: '判断', multi: '多选', match: '匹配' } as any)[currentQ.value?.type || 'choice'])
+const typeLabel = computed(() => ({ choice: '单选', blank: '填空', judge: '判断', multi: '多选', match: '匹配', sort: '排序' } as any)[currentQ.value?.type || 'choice'])
 const diffLabel = computed(() => ({ easy: '易', medium: '中', hard: '难' } as any)[currentQ.value?.difficulty || 'medium'])
 const shortSource = computed(() => {
   const s = currentQ.value?.source || ''
@@ -427,11 +529,53 @@ const matchRightOptions = computed(() => {
   return [...q.pairs.map(p => p.right)].sort((a, b) => a.localeCompare(b))
 })
 const matchIncomplete = computed(() => currentQ.value?.pairs?.some((_, i) => !matchAnswers.value[i]) ?? true)
+const sortIncomplete = computed(() => {
+  const q = currentQ.value
+  if (!q?.pairs) return true
+  return sortPicked.value.length < q.pairs.length
+})
+// 排序题：槽位总数（步数）与"当前该填第几步"
+const sortStepCount = computed(() => currentQ.value?.pairs?.length || 0)
+// 排序题：首次玩法引导（全局只出现一次，直到用户点"知道了"；作答后回看不再显示）
+const showSortGuide = computed(() => currentQ.value?.type === 'sort' && !answered.value && !sortGuideDismissed.value)
+const dismissSortGuide = () => {
+  sortGuideDismissed.value = true
+  try { localStorage.setItem(SORT_GUIDE_KEY, '1') } catch { /* 隐私模式等忽略 */ }
+}
+// 排序题：正确答案步骤序列（q.answer 为 "步骤1>步骤2>..."，与 pairs 顺序无关）
+const correctSteps = computed(() => (currentQ.value?.answer || '').split('>').map(s => s.trim()).filter(Boolean))
+// 槽位状态：filled（已填）/ active（当前该填的下一格）/ answered 后按正误标色 right|wrong
+const sortSlotClass = (i: number) => {
+  const cls: string[] = []
+  if (sortPicked.value[i] != null) {
+    cls.push('filled')
+    if (answered.value) cls.push(sortPicked.value[i] === correctSteps.value[i] ? 'right' : 'wrong')
+  } else if (!answered.value && i === sortPicked.value.length) {
+    cls.push('active')
+  }
+  return cls.join(' ')
+}
+const sortSlotClick = (i: number) => {
+  if (answered.value) return
+  if (sortPicked.value[i] != null) sortRemove(i) // 点已填格子 = 撤销
+}
 const correctMatchHint = computed(() => {
   const q = currentQ.value
   if (!q?.pairs) return ''
   return q.pairs.map((p, i) => `${i + 1}→${matchRightOptions.value.indexOf(p.right) + 1}`).join('  ')
 })
+// 答案友好格式化：match → "左→右" 配对文本；sort → 步骤序列；其余原样
+const formatAnswer = (q: QuizQuestion | null) => {
+  if (!q) return ''
+  if (q.type === 'match' && q.pairs?.length) {
+    return q.pairs.map(p => `${p.left}→${p.right}`).join('，')
+  }
+  if (q.type === 'sort') {
+    // answer 为 "步骤1>步骤2>..." 的正确序列（pairs 数组顺序不保证=正确顺序）
+    return q.answer.split('>').map(s => s.trim()).filter(Boolean).join(' → ')
+  }
+  return q.answer
+}
 const currentQTime = computed(() => answered.value ? (perQuestionSec.value[currentIdx.value] || 0) : Math.max(0, Math.floor((nowTick.value - qStart.value) / 1000)))
 
 const todayCount = computed(() => quizSessions.value.filter(s => s.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10)).reduce((acc, s) => acc + s.total, 0))
@@ -499,12 +643,17 @@ const isCorrectAt = (i: number) => {
   if (q.type === 'match') {
     return my === q.pairs?.map(p => p.right).join('|')
   }
+  if (q.type === 'sort') {
+    // 排序：比较去空白后的 "步骤1>步骤2>..." 序列
+    const norm = (s: string) => s.replace(/\s+/g, '')
+    return norm(my) === norm(q.answer)
+  }
   return my === q.answer
 }
 
 // ---------- 工具 ----------
 const typeLabelAt = (i: number) => {
-  const map: any = { choice: '单选', blank: '填空', judge: '判断', multi: '多选', match: '匹配' }
+  const map: any = { choice: '单选', blank: '填空', judge: '判断', multi: '多选', match: '匹配', sort: '排序' }
   return map[questions.value[i]?.type] || ''
 }
 const heatClass = (n: number) => (n === 0 ? 'l0' : n <= 3 ? 'l1' : n <= 8 ? 'l2' : 'l3')
@@ -539,7 +688,12 @@ const doGenerate = async () => {
   generating.value = true; generateMsg.value = ''; generateErr.value = false
   try {
     console.log('[Quiz] 调用前', JSON.stringify({ courseIds: selectedCourses.value, count: qCount.value, hasElectron: !!window.noteAPI }))
-    let qs = await generateQuiz({ courseIds: selectedCourses.value, count: qCount.value, provider: quizProvider.value })
+    let qs = await generateQuiz({
+      courseIds: selectedCourses.value,
+      count: qCount.value,
+      provider: quizProvider.value,
+      extendRatio: extendEnabled.value ? extendRatio.value : 0,
+    })
     console.log('[Quiz] 调用成功', qs.length, '题')
     if (!qs.length) throw new Error('没有生成到题目')
     if (dedupEnabled.value) {
@@ -552,7 +706,7 @@ const doGenerate = async () => {
     const courseName = courses.value.find(c => c.id === selectedCourses.value[0])?.name || '全部笔记'
     sessionTitle.value = `${courseName} · ${qs.length} 题`
     usedProvider.value = ''; fromMistakes.value = false
-    phase.value = 'quiz'; startTimer()
+    phase.value = 'quiz'; initSortState(); startTimer()
   } catch (e: any) {
     console.error('[Quiz] doGenerate error:', e?.message, '|name:', e?.name, '|stack:', (e?.stack || '').slice(0, 600))
     generateErr.value = true
@@ -562,7 +716,15 @@ const doGenerate = async () => {
 
 const resetAnswers = () => {
   answers.value = new Array(questions.value.length).fill(null)
-  currentIdx.value = 0; blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []; perQuestionSec.value = []
+  currentIdx.value = 0; blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []; sortPicked.value = []; sortRemaining.value = []; perQuestionSec.value = []
+}
+
+// 排序题：切换题目时初始化候选步骤（打乱顺序）
+const initSortState = () => {
+  const q = currentQ.value
+  if (q?.type !== 'sort' || !q.pairs?.length) { sortPicked.value = []; sortRemaining.value = []; return }
+  sortPicked.value = []
+  sortRemaining.value = [...q.pairs.map(p => p.left)].sort(() => Math.random() - 0.5)
 }
 
 const startDueReview = () => {
@@ -570,7 +732,7 @@ const startDueReview = () => {
   if (!due.length) { showToast('今日没有到期的题目 🎉', 'success'); return }
   questions.value = due; resetAnswers()
   sessionTitle.value = `今日复习 · ${due.length} 题`
-  phase.value = 'quiz'; startTimer()
+  phase.value = 'quiz'; initSortState(); startTimer()
 }
 
 // ---------- 答题 ----------
@@ -596,16 +758,34 @@ const submitMatch = () => {
   const mySeq = pairs.map((_, i) => matchAnswers.value[i] || '')
   answers.value[currentIdx.value] = mySeq.join('|')
 }
+
+// ---------- 排序题 ----------
+const sortPick = (step: string) => {
+  if (answered.value) return
+  sortPicked.value = [...sortPicked.value, step]
+  sortRemaining.value = sortRemaining.value.filter(s => s !== step)
+}
+const sortRemove = (i: number) => {
+  if (answered.value) return
+  const step = sortPicked.value[i]
+  if (step == null) return
+  sortPicked.value = sortPicked.value.filter((_, idx) => idx !== i)
+  sortRemaining.value = [...sortRemaining.value, step]
+}
+const submitSort = () => {
+  if (sortIncomplete.value) { showToast('请把步骤按顺序排完', 'warn'); return }
+  answers.value[currentIdx.value] = sortPicked.value.join('>')
+}
 const nextQ = () => {
   if (currentIdx.value < questions.value.length - 1) {
     advanceTimer(); currentIdx.value++
-    blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []
+    blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []; initSortState()
   }
 }
 const prevQ = () => {
   if (currentIdx.value > 0) {
     advanceTimer(); currentIdx.value--
-    blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []
+    blankInput.value = ''; multiPicked.value = []; matchAnswers.value = []; initSortState()
   }
 }
 
@@ -627,10 +807,15 @@ const finishQuiz = async () => {
     for (const id of masteredIds) await removeQuizMistake(id)
     fromMistakes.value = false
   }
+  // 复习凯旋：正确率过半则夺回一张火种
+  if (correct / total >= 0.6) {
+    const id = revive(10)
+    if (id) showToast(`复习凯旋 · ${heirName(id)} 重燃火种`, 'success')
+  }
   phase.value = 'result'
 }
 
-const restartQuiz = () => { resetAnswers(); phase.value = 'quiz'; startTimer() }
+const restartQuiz = () => { resetAnswers(); phase.value = 'quiz'; initSortState(); startTimer() }
 const backToSetup = () => { phase.value = 'setup'; questions.value = []; answers.value = []; currentIdx.value = 0; generateMsg.value = ''; totalSec.value = 0 }
 
 const reviewSession = (s: QuizSession) => {
@@ -641,17 +826,19 @@ const reviewSession = (s: QuizSession) => {
 const retryMistakes = async () => {
   if (!quizMistakes.value.length) return
   questions.value = quizMistakes.value.map(m => m.question); resetAnswers()
-  sessionTitle.value = '错题重练'; fromMistakes.value = true; phase.value = 'quiz'; startTimer()
+  sessionTitle.value = '错题重练'; fromMistakes.value = true; phase.value = 'quiz'; initSortState(); startTimer()
 }
 
 // ---------- 导出 ----------
 const exportItems = () => {
-  const typeL: any = { choice: '单选题', blank: '填空题', judge: '判断题', multi: '多选题', match: '匹配题' }
+  const typeL: any = { choice: '单选题', blank: '填空题', judge: '判断题', multi: '多选题', match: '匹配题', sort: '排序题' }
   return questions.value.map((q, i) => ({
-    question: q.question, answer: q.answer, myAnswer: answers.value[i] || '未答',
+    question: q.question, answer: formatAnswer(q), myAnswer: answers.value[i] || '未答',
     explanation: q.explanation, source: q.source, typeLabel: typeL[q.type],
     difficulty: q.difficulty === 'easy' ? '易' : q.difficulty === 'hard' ? '难' : '中',
     correct: isCorrectAt(i),
+    kind: q.kind === 'extend' ? '举一反三' : '复习',
+    basis: q.kind === 'extend' ? q.basis : '',
   }))
 }
 const exportCurrent = async () => {
@@ -661,10 +848,13 @@ const exportCurrent = async () => {
   } catch (e: any) { showAlert('导出失败', e?.message || String(e)) }
 }
 const exportMistakes = async () => {
+  const typeL: any = { choice: '单选题', blank: '填空题', judge: '判断题', multi: '多选题', match: '匹配题', sort: '排序题' }
   const items = quizMistakes.value.map(m => ({
-    question: m.question.question, answer: m.question.answer, myAnswer: m.myAnswer || '未答',
+    question: m.question.question, answer: formatAnswer(m.question), myAnswer: m.myAnswer || '未答',
     explanation: m.question.explanation, source: m.question.source,
-    typeLabel: '', difficulty: '', correct: false,
+    typeLabel: typeL[m.question.type] || '', difficulty: '', correct: false,
+    kind: m.question.kind === 'extend' ? '举一反三' : '复习',
+    basis: m.question.kind === 'extend' ? m.question.basis : '',
   }))
   try {
     const path = await window.noteAPI.quizExportHtml({ title: `错题本 · ${items.length} 题`, items })
@@ -703,8 +893,25 @@ const judgeClass = (v: '对' | '错') => {
   return {}
 }
 
-onMounted(() => { loadQuizData(); loadQuizMastery() })
-onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
+onMounted(() => {
+  loadQuizData(); loadQuizMastery()
+  // 排序题首次玩法引导：读全局记忆（看过一次就不再弹）
+  try { sortGuideDismissed.value = localStorage.getItem(SORT_GUIDE_KEY) === '1' } catch { /* ignore */ }
+  // 出题通道通知：云端超时自动回退本地时即时提示，避免误以为卡死
+  const api = (window as any).noteAPI
+  if (api?.onQuizProviderNotice) {
+    noticeCleanup = api.onQuizProviderNotice((p: any) => {
+      if (p?.kind === 'fallback') {
+        showToast(p.message || '云端排队超时，已切换本地模型出题', 'info')
+        if (p.reason) console.info('[Quiz] 云端出题回退原因:', p.reason)
+      }
+    })
+  }
+})
+onUnmounted(() => {
+  if (timerHandle) clearInterval(timerHandle)
+  if (noticeCleanup) { noticeCleanup(); noticeCleanup = undefined }
+})
 </script>
 
 <style scoped>
@@ -909,7 +1116,7 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
   display: flex; align-items: center; justify-content: center; font-size: 9px;
 }
 .course-name { flex: 1; font-size: 13px; color: #2D2541; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.course-count { font-size: 11px; color: #9088A8; background: #F4EEFB; border-radius: 99px; padding: 1px 8px; flex-shrink: 0; }
+.course-count { font-size: 11px; color: var(--color-accent-deep); background: var(--color-pink-light); border-radius: var(--radius-pill); padding: 1px 8px; flex-shrink: 0; font-weight: 600; } /* P0-1：替换硬编码色→主题变量，前景加深版对比度≈4.6:1 ✅ */
 .course-tick {
   width: 18px; height: 18px; border-radius: 50%;
   background: #FF6B9D; color: #fff; font-size: 11px; font-weight: 700;
@@ -936,6 +1143,34 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .seg-btn.active strong, .seg-btn.active small { color: #fff; }
 
 .toggle-row { display: flex; gap: 18px; flex-wrap: wrap; }
+
+/* 举一反三配置 */
+.extend-box {
+  margin-top: 14px; padding: 14px 16px;
+  border: 1.5px dashed rgba(183,148,246,0.35); border-radius: 14px;
+  background: rgba(183,148,246,0.04);
+  transition: all 0.2s;
+}
+.extend-box.on {
+  border-color: rgba(255,107,157,0.45);
+  background: linear-gradient(135deg, rgba(255,107,157,0.05), rgba(183,148,246,0.06));
+}
+.extend-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.extend-desc { font-size: 11px; color: #9088A8; flex: 1; min-width: 200px; line-height: 1.5; }
+.extend-ratio { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.er-label { font-size: 12px; color: #9088A8; font-weight: 600; margin-right: 2px; }
+.er-btn {
+  padding: 7px 16px; border: 1.5px solid #EBE5F4; border-radius: 99px;
+  background: #fff; cursor: pointer; transition: all 0.18s;
+}
+.er-btn strong { font-size: 12px; color: #6B6580; font-weight: 700; }
+.er-btn:hover { border-color: #FF6B9D; }
+.er-btn.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #FF6B9D, #B794F6);
+  box-shadow: 0 4px 12px rgba(255,107,157,0.3);
+}
+.er-btn.active strong { color: #fff; }
 .provider-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 2px; }
 .provider-btn {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
@@ -1072,6 +1307,12 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .q-type.judge { background: rgba(110,138,255,0.14); color: #6E8AFF; }
 .q-type.multi { background: rgba(251,191,36,0.16); color: #FB923C; }
 .q-type.match { background: rgba(52,211,153,0.14); color: #34D399; }
+.q-type.sort { background: rgba(110,138,255,0.14); color: #6E8AFF; }
+.q-kind {
+  font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 99px;
+  background: linear-gradient(120deg, rgba(255,107,157,0.16), rgba(183,148,246,0.16));
+  color: #B794F6; border: 1px dashed rgba(183,148,246,0.45);
+}
 .q-diff { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
 .q-diff.easy { background: rgba(52,211,153,0.14); color: #34D399; }
 .q-diff.medium { background: rgba(251,191,36,0.14); color: #FB923C; }
@@ -1079,6 +1320,21 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .q-from { margin-left: auto; font-size: 11px; color: #9088A8; cursor: pointer; max-width: 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .q-from:hover { color: #FF6B9D; }
 .q-text { font-size: 21px; line-height: 1.65; color: #2D2541; margin: 0 0 24px; font-weight: 600; letter-spacing: -0.2px; }
+
+/* 举一反三：依据知识点卡片 */
+.q-basis {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: -8px 0 20px; padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(183,148,246,0.1), rgba(110,138,255,0.06));
+  border: 1px dashed rgba(183,148,246,0.4); border-radius: 12px;
+  font-size: 13px; line-height: 1.6; color: #6B6580;
+}
+.qb-tag {
+  flex-shrink: 0; font-size: 10px; font-weight: 700;
+  padding: 2px 9px; border-radius: 99px; margin-top: 2px;
+  background: linear-gradient(135deg, #FF6B9D, #B794F6); color: #fff;
+}
+.qb-text { flex: 1; min-width: 0; }
 
 .opt-stack { display: flex; flex-direction: column; gap: 10px; }
 .opt-card {
@@ -1181,6 +1437,90 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .match-select:focus { border-color: #B794F6; box-shadow: 0 0 0 4px rgba(183,148,246,0.15); }
 .match-select.right { border-color: #34D399; background: rgba(52,211,153,0.06); }
 .match-select.wrong { border-color: #F87171; background: rgba(248,113,113,0.06); }
+
+/* 排序题 */
+.sort-stack { display: flex; flex-direction: column; gap: 14px; }
+.sort-tip { font-size: 12px; color: #9088A8; display: flex; align-items: center; gap: 6px; }
+.sort-tip.done { color: #3BA55D; font-weight: 600; }
+/* 首次玩法引导横幅 */
+.sort-guide {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; margin-bottom: 2px;
+  background: linear-gradient(135deg, rgba(255,107,157,0.10), rgba(183,148,246,0.12));
+  border: 1.5px solid rgba(255,107,157,0.35); border-radius: 12px;
+}
+.sg-mark { font-size: 18px; line-height: 1.3; flex-shrink: 0; }
+.sg-text { flex: 1; font-size: 12.5px; line-height: 1.6; color: #6A5E88; }
+.sg-text em { font-style: normal; font-weight: 700; color: #E1557F; }
+.sg-dismiss {
+  flex-shrink: 0; padding: 6px 14px;
+  background: linear-gradient(135deg, #FF6B9D, #B794F6); color: #fff;
+  border: none; border-radius: 999px; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.sg-dismiss:hover { opacity: 0.85; }
+/* 槽位作答区 */
+.sort-slots {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px;
+  background: rgba(110,138,255,0.05);
+  border: 1.5px dashed rgba(110,138,255,0.35); border-radius: 14px;
+}
+.sort-slot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-radius: 11px;
+  background: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(110,138,255,0.18);
+  min-height: 40px; transition: all 0.18s;
+}
+.sort-slot.active {
+  border: 1.5px dashed rgba(110,138,255,0.65);
+  background: rgba(110,138,255,0.07);
+  box-shadow: inset 0 0 0 1px rgba(110,138,255,0.12);
+}
+.sort-slot.filled { cursor: pointer; border-style: solid; border-color: rgba(110,138,255,0.45); }
+.sort-slot.filled:hover { border-color: #F87171; }
+.sort-slot.filled:hover .ss-x { opacity: 1; }
+.sort-slot.right { border-color: #4CD08A !important; background: rgba(76,208,138,0.08) !important; }
+.sort-slot.wrong { border-color: #F87171 !important; background: rgba(248,113,113,0.08) !important; }
+.ss-idx {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #FF6B9D, #B794F6); color: #fff;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.sort-slot.right .ss-idx { background: #4CD08A; }
+.sort-slot.wrong .ss-idx { background: #F87171; }
+.ss-text { font-size: 13px; font-weight: 600; color: #2D2541; flex: 1; }
+.ss-empty { font-size: 12px; color: #B7B0CC; }
+.ss-x { font-size: 10px; color: #F87171; opacity: 0.35; transition: opacity 0.15s; flex-shrink: 0; }
+.sort-candidates { display: flex; flex-direction: column; gap: 8px; }
+.sort-cand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; text-align: left;
+  background: rgba(255,255,255,0.8);
+  border: 1.5px solid #EBE5F4; border-radius: 12px;
+  cursor: pointer; font-size: 14px; color: #2D2541;
+  transition: all 0.18s;
+}
+.sort-cand:not(:disabled):hover {
+  border-color: #6E8AFF; transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(110,138,255,0.14);
+}
+.sc-idx {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(110,138,255,0.12); color: #6E8AFF;
+  font-size: 12px; font-weight: 800;
+}
+.sc-text { flex: 1; }
+.sc-go { font-size: 11px; color: #6E8AFF; font-weight: 600; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
+.sort-cand:not(:disabled):hover .sc-go { opacity: 1; }
+.sort-done {
+  padding: 10px 14px; text-align: center;
+  font-size: 13px; font-weight: 600; color: #3BA55D;
+  background: rgba(76,208,138,0.08); border-radius: 11px;
+}
 
 .q-feedback {
   margin-top: 22px; padding: 18px 20px; border-radius: 16px;
@@ -1317,7 +1657,13 @@ onUnmounted(() => { if (timerHandle) clearInterval(timerHandle) })
 .q-pill-mini.multi { background: rgba(251,191,36,0.14); color: #FB923C; }
 .q-pill-mini.judge { background: rgba(110,138,255,0.12); color: #6E8AFF; }
 .q-pill-mini.match { background: rgba(52,211,153,0.12); color: #34D399; }
+.q-pill-mini.sort { background: rgba(110,138,255,0.12); color: #6E8AFF; }
+.q-pill-mini.extend {
+  background: linear-gradient(120deg, rgba(255,107,157,0.14), rgba(183,148,246,0.14));
+  color: #B794F6; border: 1px dashed rgba(183,148,246,0.4);
+}
 .r-time { font-style: normal; font-size: 11px; color: #9088A8; margin-left: 8px; }
+.r-basis { font-size: 11px; color: #8B7AB8; margin: 2px 0 6px; line-height: 1.6; background: rgba(183,148,246,0.07); padding: 6px 10px; border-radius: 8px; }
 .r-meta { font-size: 12px; color: #6B6580; margin-bottom: 4px; }
 .r-meta b { color: #2D2541; }
 .r-correct { margin-left: 12px; color: #dc2626; }

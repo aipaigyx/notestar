@@ -116,8 +116,7 @@ defineExpose({ showConfirm, showAlert, showToast })
 .dialog-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(33, 26, 77, 0.35);
-  backdrop-filter: blur(4px);
+  background: rgba(33, 26, 77, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;

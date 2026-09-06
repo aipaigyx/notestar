@@ -1,0 +1,97 @@
+<!doctype html><html><head><meta charset="utf-8"><title>rec-proxy</title></head><body>
+<video id="v" playsinline muted style="position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0;"></video>
+<script>
+const { ipcRenderer } = require('electron')
+let rec = null, stream = null, segIndex = 0, segTimer = null, _stopRequested = false
+const AUTO_SEG_SEC = 5000
+const JPEG_QUALITY = 0.82
+
+const videoEl = document.getElementById('v')
+
+// 用当前 stream 的最新帧来 drawImage 截图：比 desktopCapturer.getSources+thumbnail(300ms+) 快 5~10 倍
+function fastCapture(width = 1280, height = 720) {
+  return new Promise((resolve) => {
+    if (!stream || !videoEl || !videoEl.videoWidth) { resolve({ ok: false, reason: 'no_stream' }); return }
+    try {
+      const vw = videoEl.videoWidth, vh = videoEl.videoHeight
+      const scale = Math.min(width / vw, height / vh, 1)
+      const outW = Math.max(2, Math.round(vw * scale))
+      const outH = Math.max(2, Math.round(vh * scale))
+      const c = document.createElement('canvas'); c.width = outW; c.height = outH
+      const ctx = c.getContext('2d', { alpha: false })
+      ctx.drawImage(videoEl, 0, 0, outW, outH)
+      // toDataURL 有 jpeg 支持，质量 82 体积小
+      const dataUri = c.toDataURL('image/jpeg', JPEG_QUALITY)
+      resolve({ ok: true, dataUri, width: outW, height: outH })
+    } catch (e) { resolve({ ok: false, reason: String(e?.message || e) }) }
+  })
+}
+
+function log(msg) { ipcRenderer.send('rec-proxy:log', msg) }
+function err(msg) { ipcRenderer.send('rec-proxy:error', String(msg?.message || msg)) }
+
+async function start() {
+  try {
+    log('代理 start 开始, mediaDevices=' + (typeof navigator.mediaDevices))
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+    log('代理 getDisplayMedia 成功, tracks=' + stream.getTracks().length)
+    // 把 stream 挂到一个隐藏 video 上，videoEl 持续拿最新 decoded frame 给 fastCapture drawImage
+    try { videoEl.srcObject = stream; await videoEl.play().catch(() => {}) } catch (_) {}
+    stream.getVideoTracks().forEach(t => t.addEventListener('ended', () => log('video track ended')))
+    beginSegment()
+  } catch (e) { err(e) }
+}
+
+// 响应「快速截当前帧」请求：直接走 canvas.drawImage。快 (<50ms)、准、无 PowerShell/选源开销
+ipcRenderer.on('rec-proxy:capture', async (evt, { width, height, reqId }) => {
+  const r = await fastCapture(width, height)
+  ipcRenderer.send('rec-proxy:capture-reply', { reqId, ...r })
+})
+
+function beginSegment() {
+  if (_stopRequested || !stream) return
+  segIndex++
+  const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
+    : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : ''
+  rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+  const idx = segIndex - 1
+  const chunks = []
+  const segStart = performance.now()
+  log('beginSegment #' + idx + ' mime=' + rec.mimeType)
+
+  rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data) }
+  rec.onstart = () => log('recorder.onstart #' + idx)
+  rec.onerror = (e) => err('recorder.onerror #' + idx + ' ' + (e.error?.message || e.error))
+  rec.onstop = async () => {
+    const blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' })
+    const buf = await blob.arrayBuffer()
+    const dur = Math.max(0.001, (performance.now() - segStart) / 1000)
+    ipcRenderer.send('rec-proxy:seg', JSON.stringify({
+      index: idx, bytes: buf.byteLength, durationSec: dur, mime: rec.mimeType || 'video/webm'
+    }), Buffer.from(buf))
+    log('recorder.onstop #' + idx + ' bytes=' + buf.byteLength + ' dur=' + dur.toFixed(1) + 's')
+    if (!_stopRequested && stream) setTimeout(beginSegment, 200)
+  }
+
+  rec.start(2000)
+  segTimer = setTimeout(() => {
+    log('segTimer #' + idx + ' 触发')
+    if (rec.state === 'recording' && !_stopRequested) { try { rec.stop() } catch(e){} }
+  }, AUTO_SEG_SEC)
+  rec.addEventListener('stop', () => clearTimeout(segTimer), { once: true })
+}
+
+ipcRenderer.on('rec-proxy:stop', async () => {
+  _stopRequested = true
+  if (segTimer) { clearTimeout(segTimer); segTimer = null }
+  if (rec && rec.state === 'recording') {
+    try { rec.stop() } catch (e) {}
+    await new Promise(r => setTimeout(r, 800))
+  }
+  try { if (videoEl) { videoEl.pause(); videoEl.srcObject = null } } catch (_) {}
+  if (stream) stream.getTracks().forEach(t => t.stop())
+  ipcRenderer.send('rec-proxy:done')
+})
+
+ipcRenderer.on('rec-proxy:start', start)
+</script></body></html>

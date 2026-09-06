@@ -34,22 +34,35 @@ def main():
         sys.exit(1)
 
     try:
-        from faster_whisper import WhisperModel
-
-        # 离线加载：模型目录下 hub 缓存中优先 medium（中文效果好），否则 tiny
+        # 必须在 import faster_whisper 之前设置 HF_HOME/HF_HUB_OFFLINE——
+        # huggingface_hub 在 import 时读取环境变量，之后设置无效，
+        # 会导致仍去默认 ~/.cache/huggingface 找模型而报
+        # "Cannot find an appropriate cached snapshot folder"（2026-08-14 修复）。
         model_dir = resolve_model_dir()
         if model_dir:
             os.environ["HF_HOME"] = model_dir
             os.environ["HF_HUB_OFFLINE"] = "1"
+        from faster_whisper import WhisperModel
+
+        # 优先直接定位本地 snapshot 目录并传目录路径给 WhisperModel——
+        # faster-whisper 支持直接加载 ctranslate2 模型目录，彻底绕开 huggingface_hub
+        # 缓存解析（HF 缓存解析在此环境不可靠，会报 LocalEntryNotFoundError）。
         hub = os.path.join(model_dir or "", "hub")
-        if model_dir and os.path.isdir(os.path.join(hub, "models--Systran--faster-whisper-medium")):
-            model_size = "Systran/faster-whisper-medium"
-        elif model_dir and os.path.isdir(os.path.join(hub, "models--Systran--faster-whisper-tiny")):
-            model_size = "Systran/faster-whisper-tiny"
-        else:
+        model_size = None
+        model_path = None
+        for repo in ("models--Systran--faster-whisper-medium", "models--Systran--faster-whisper-tiny"):
+            repo_dir = os.path.join(hub, repo)
+            snaps = os.path.join(repo_dir, "snapshots")
+            if os.path.isdir(snaps):
+                snap_list = [d for d in os.listdir(snaps) if os.path.isdir(os.path.join(snaps, d))]
+                if snap_list:
+                    model_path = os.path.join(snaps, snap_list[0])
+                    model_size = "Systran/faster-whisper-" + ("medium" if "medium" in repo else "tiny")
+                    break
+        if not model_path:
             model_size = "base"  # 无本地模型时退回联网下载（需网络）
 
-        model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        model = WhisperModel(model_path or model_size, device="cpu", compute_type="int8")
 
         segments, info = model.transcribe(
             audio_path,

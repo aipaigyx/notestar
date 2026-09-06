@@ -23,6 +23,29 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   time: string
+  /** AI 消息联网搜索到的资料（用于展示来源） */
+  webSources?: WebSearchResult[]
+  /** AI 消息相关的网络参考图 */
+  webImages?: WebImageResult[]
+}
+
+/** 联网搜索结果 */
+export interface WebSearchResult {
+  title: string
+  snippet: string
+  url: string
+}
+
+/** 联网参考图结果 */
+export interface WebImageResult {
+  /** 本地缓存路径（images/web/xxx），空则用 directUrl */
+  localPath: string
+  /** 直链缩略图 URL（本地缓存失败时前端直接显示） */
+  directUrl: string
+  /** 原图/来源页 URL */
+  sourceUrl: string
+  /** 图片标题（B 站封面为视频标题 / AI 生图标记） */
+  title?: string
 }
 
 export interface ChatSession {
@@ -46,7 +69,31 @@ export interface Settings {
   apiKey: string
   model: string
   provider: AIProvider
+  // 每平台独立 API Key（v2026-09-02）：key 为"平台 id → 明文 key"，前端内存使用；
+  // 落盘时主进程整体加密到 apiKeysEnc。apiKey 字段保留为"当前 provider 的 key"以兼容旧逻辑。
+  apiKeys?: Record<string, string>
   modelRouting?: ModelRouting // 按功能路由模型（可选）
+  // P0-V1 修复：记住上次截图选择的窗口/屏幕 sourceId（desktopCapturer source id），避免每次截图都走不可靠的标题匹配
+  rememberedCapture?: { sourceId: string; sourceName: string } | null
+  // Day 3 P1-V4：录屏占用告警阈值（GB，超过后 UI 弹提示清理）+ 一键清理 N 天前的录屏
+  recStorageWarnGB?: number // 默认 2
+  recCleanupDays?: number  // 默认 30
+  // 翁法罗斯皮肤：卡片自定义背景图（Electron: "images/xxx.png" 相对引用；浏览器: dataUri）
+  // 旧版单图字段，保留兼容：有值时并入 cardBackgrounds.global
+  cardBackground?: string | null
+  // 卡片背景系统 v2：按卡片区域分组，每组可独立设背景 + 遮罩强度
+  // group: 'all' | 'dashboard' | 'notes'（all=其余全局主卡片兜底）
+  cardBackgrounds?: {
+    all?: string | null       // 全局兜底背景（旧 cardBackground 迁移到此处）
+    dashboard?: string | null // 仪表盘统计/图表卡片
+    notes?: string | null     // 笔记列表/笔记卡片
+    veil?: number             // 遮罩强度 0.3~0.85，默认 0.62
+  }
+  // 用户资料（侧栏头像/昵称）：avatar 为图片相对引用（images/xxx.png）或 dataUri
+  userProfile?: {
+    name?: string
+    avatar?: string | null
+  }
 }
 
 // 按功能路由模型：chat=AI对话 quick=快速整理(AI整理) deep=深度分析(知识分析/扩展/摘要)
@@ -167,19 +214,23 @@ export const AI_PLATFORMS: AIPlatformConfig[] = [
     icon: '🟢',
     hostname: 'integrate.api.nvidia.com',
     apiPath: '/v1/chat/completions',
-    defaultModel: 'meta/llama-3.1-8b-instruct',
+    // ⚠️ 2026-09-02 实测 /v1/models：meta/llama-3.1-8b/70b/405b 已下线，以下均为真实可用的模型 id
+    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
     models: [
-      { id: 'meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B', desc: '推荐，快速高效' },
-      { id: 'meta/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', desc: '大参数，更智能' },
-      { id: 'meta/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', desc: '最强开源模型' },
-      { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', desc: 'NVIDIA 优化版' },
-      { id: 'mistralai/mixtral-8x7b-instruct', name: 'Mixtral 8x7B', desc: '混合专家模型' },
-      { id: 'google/gemma-2-9b-it', name: 'Gemma 2 9B', desc: 'Google 轻量模型' },
-      { id: 'microsoft/phi-3-medium-4k-instruct', name: 'Phi-3 Medium', desc: '微软小模型' },
+      { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', desc: '推荐 · NVIDIA 优化 Llama' },
+      { id: 'nvidia/llama-3.1-nemotron-51b-instruct', name: 'Nemotron 51B', desc: '快速 · NVIDIA 优化' },
+      { id: 'nvidia/nemotron-4-340b-instruct', name: 'Nemotron-4 340B', desc: '超大规模模型' },
+      { id: 'nvidia/nemotron-3.5-lightning-30b-a3b', name: 'Nemotron 3.5 Lightning 30B', desc: '新一代快速模型' },
+      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron 3 Ultra 550B', desc: '旗舰模型' },
       { id: 'meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 Vision 11B', desc: '👁️ 支持图片识别' },
       { id: 'meta/llama-3.2-90b-vision-instruct', name: 'Llama 3.2 Vision 90B', desc: '👁️ 大参数视觉模型' },
       { id: 'microsoft/phi-3-vision-128k-instruct', name: 'Phi-3 Vision', desc: '👁️ 微软视觉模型' },
       { id: 'nvidia/vila', name: 'NVIDIA VILA', desc: '👁️ NVIDIA 视觉模型' },
+      { id: 'google/gemma-3-12b-it', name: 'Gemma 3 12B', desc: 'Google 最新' },
+      { id: 'mistralai/mistral-large', name: 'Mistral Large', desc: 'Mistral 旗舰' },
+      { id: 'mistralai/mixtral-8x22b-v0.1', name: 'Mixtral 8x22B', desc: '混合专家模型' },
+      { id: 'deepseek-ai/deepseek-v4-flash-0731', name: 'DeepSeek V4 Flash', desc: '快速推理' },
+      { id: 'deepseek-ai/deepseek-v4-pro-0813', name: 'DeepSeek V4 Pro', desc: '强推理' },
     ],
     apiKeyUrl: 'https://build.nvidia.com',
     apiKeyPrefix: 'nvapi-',
@@ -332,27 +383,43 @@ declare global {
       getBackupInfo: () => Promise<{ lastBackupAt?: string; backupDir?: string; overdue: boolean }>
       // AI
       generateNote: (rawText: string) => Promise<string>
-      chatWithAI: (question: string, noteContext: string, history?: ChatMessage[]) => Promise<string>
+      chatWithAI: (question: string, noteContext: string, history?: ChatMessage[], mode?: 'qa' | 'teach' | 'quiz') => Promise<string>
       summarizeNote: (noteContent: string) => Promise<string>
       analyzeNote: (noteContent: string, includeImages?: boolean, noteId?: string, force?: boolean) => Promise<NoteAnalysis>
       getAnalysisCache: (noteId: string, contents: string[]) => Promise<{ found: boolean; result?: NoteAnalysis; cachedAt?: string }>
       expandNote: (noteContent: string, includeImages?: boolean) => Promise<NoteExpansion>
+      // 本地音频转写 (Whisper) + 语音转文字独立窗口
+      transcribeAudio: (audioData: ArrayBuffer) => Promise<string>
+      openVoiceWindow: () => Promise<boolean>
+      closeVoiceWindow: () => Promise<boolean>
       // AI 流式监听
       onGenerateNoteChunk: (callback: (chunk: string) => void) => void
       onChatChunk: (callback: (chunk: string) => void) => void
       // 数据管理
       exportData: () => Promise<string | null>
+      // 导出任意文本（AI 对话导出 Markdown）
+      exportText: (filename: string, content: string) => Promise<boolean>
       importData: () => Promise<{ success: boolean; notes: number; courses: number } | null>
       clearData: (type: 'all' | 'notes' | 'chat' | 'stats' | 'courses') => Promise<boolean>
+      // 联网搜索（AI 助手兜底）：用系统浏览器打开搜索引擎
+      openSearch: (keywords: string) => Promise<boolean>
+      // 打开外部链接（联网来源点击）
+      openUrl: (url: string) => Promise<boolean>
+      // 联网搜索（AI 联网总结）：DDG 优先 + Bing 兜底
+      searchWeb: (query: string) => Promise<WebSearchResult[]>
+      // 联网参考图搜索（AI 回答配图）
+      searchWebImages: (query: string) => Promise<WebImageResult[]>
+      // AI 生图（免费 Pollinations）：返回图片直链 URL
+      generateImage: (prompt: string) => Promise<string>
       // 知识点复习（题库 + 错题本）
       quizSaveSessions: (sessions: QuizSession[]) => Promise<boolean>
       quizGetSessions: () => Promise<QuizSession[]>
       quizSaveMistakes: (mistakes: QuizMistake[]) => Promise<boolean>
       quizGetMistakes: () => Promise<QuizMistake[]>
-      quizGenerate: (opts: { noteIds?: string[]; courseIds?: string[]; count?: number; provider?: 'auto' | 'cloud' | 'local' }) => Promise<{ questions: QuizQuestion[]; provider: string }>
+      quizGenerate: (opts: { noteIds?: string[]; courseIds?: string[]; count?: number; provider?: 'auto' | 'cloud' | 'local'; extendRatio?: number }) => Promise<{ questions: QuizQuestion[]; provider: string }>
       quizSaveMastery: (mastery: QuizMasteryMap) => Promise<boolean>
       quizGetMastery: () => Promise<QuizMasteryMap>
-      quizExportHtml: (opts: { title: string; items: { question: string; answer: string; myAnswer: string; explanation: string; source: string; typeLabel?: string; difficulty?: string; correct: boolean }[] }) => Promise<string | null>
+      quizExportHtml: (opts: { title: string; items: { question: string; answer: string; myAnswer: string; explanation: string; source: string; typeLabel?: string; difficulty?: string; correct: boolean; kind?: string; basis?: string }[] }) => Promise<string | null>
       // 设置
       getSettings: () => Promise<Settings>
       saveSettings: (settings: Settings) => Promise<boolean>
@@ -366,12 +433,15 @@ declare global {
       logSetLevel: (level: LogLevel) => Promise<boolean>
       logOpenDir: () => Promise<boolean>
       onLogEntry: (callback: (entry: LogEntry) => void) => () => void
+  // 数据变更事件（快捷键/悬浮球后台创建笔记后通知刷新）
+  onNotesChanged: (callback: () => void) => void
     }
   }
 }
 
 // ========== 知识点复习（Quiz） ==========
-export type QuizQuestionType = 'choice' | 'blank' | 'judge' | 'multi' | 'match'
+export type QuizQuestionType = 'choice' | 'blank' | 'judge' | 'multi' | 'match' | 'sort'
+export type QuizQuestionKind = 'review' | 'extend' // review=溯源复习题 extend=举一反三扩展题
 export type QuizMastery = 'new' | 'weak' | 'medium' | 'mastered'
 export type QuizDifficulty = 'easy' | 'medium' | 'hard'
 
@@ -379,13 +449,15 @@ export interface QuizQuestion {
   id: string
   type: QuizQuestionType
   question: string          // 题干
+  kind?: QuizQuestionKind   // 复习题 / 扩展题（缺省=review）
+  basis?: string            // 扩展题：所依据的知识点原文片段（用于"依据溯源"校验）
   options?: string[]        // 选择题/多选题选项（4 个）
-  answer: string            // 正确答案（choice: 'A'；blank: 关键词；judge: '对'|'错'；multi: 'AC'；match: 映射串）
+  answer: string            // 正确答案（choice: 'A'；blank: 关键词；judge: '对'|'错'；multi: 'AC'；match: 映射串；sort: 正确步骤序列）
   explanation: string       // 解析（必须说明依据）
   source: string            // 笔记出处（标题 + 原文引用片段，保证答案可追溯）
   sourceNoteId?: string     // 来源笔记 id（可点击跳转到笔记）
   difficulty?: QuizDifficulty // 难度（AI 标注）
-  pairs?: { left: string; right: string }[] // 匹配题：左右配对
+  pairs?: { left: string; right: string }[] // 匹配题：左右配对 / 排序题：正确步骤（用 left 存步骤文本，right 存序号）
   // 间隔重复状态（随答题更新）
   mastery?: QuizMastery     // new 未练 / weak 生疏 / medium 一般 / mastered 掌握
   reviewCount?: number      // 已练次数

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:;">
+<title>语音转文字</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(165deg, #2A2340 0%, #14101F 70%);
+    color: #E9E4F5; height: 100vh; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 18px 10px;
+  }
+  .head .mic-emoji { font-size: 20px; }
+  .head h1 { font-size: 15px; font-weight: 800; color: #FFB8CF; letter-spacing: 0.5px; flex: 1; }
+  .head .btn-close {
+    width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,0.08); color: #8F8AB0; font-size: 13px;
+  }
+  .head .btn-close:hover { background: rgba(255,107,157,0.25); color: #fff; }
+
+  .status-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin: 4px 18px 12px; padding: 12px 14px;
+    background: rgba(255,255,255,0.05); border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+  .status-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    background: #8F8AB0;
+  }
+  .status-dot.recording { background: #FF6B9D; animation: pulse 1s ease-in-out infinite; }
+  .status-dot.transcribing { background: #B794F6; animation: spinPulse 0.8s ease-in-out infinite; }
+  .status-dot.done { background: #34D399; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,107,157,0.6); } 50% { box-shadow: 0 0 0 8px rgba(255,107,157,0); } }
+  @keyframes spinPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .status-text { font-size: 13px; font-weight: 600; flex: 1; }
+  .status-time { font-size: 15px; font-weight: 800; color: #FFB8CF; font-variant-numeric: tabular-nums; }
+
+  /* 模式切换 tabs */
+  .mode-tabs { display: flex; gap: 2px; margin: 0 10px; padding: 2px; background: rgba(255,255,255,0.06); border-radius: 9px; }
+  .mode-tab {
+    border: none; background: none; color: #8F8AB0; font-size: 11.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 7px; cursor: pointer; transition: all 0.15s;
+  }
+  .mode-tab:hover { color: #E9E4F5; }
+  .mode-tab.on { background: linear-gradient(120deg, rgba(255,107,157,0.35), rgba(183,148,246,0.35)); color: #fff; }
+
+  /* 进度条 */
+  .progress-wrap {
+    margin: -4px 18px 10px; height: 4px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); overflow: hidden; display: none;
+  }
+  .progress-wrap.show { display: block; }
+  .progress-bar {
+    height: 100%; width: 0%; border-radius: 4px;
+    background: linear-gradient(90deg, #FF6B9D, #B794F6);
+    transition: width 0.3s ease;
+  }
+  .progress-wrap.indeterminate .progress-bar {
+    width: 40%; animation: progressSlide 1.1s ease-in-out infinite;
+  }
+  @keyframes progressSlide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  .rec-btn-wrap { display: flex; justify-content: center; padding: 8px 0 4px; }
+  .rec-btn {
+    width: 84px; height: 84px; border-radius: 50%; border: none; cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, #FFB8CF 0%, #FF6B9D 45%, #B794F6 100%);
+    color: #fff; font-size: 30px;
+    box-shadow: 0 6px 24px rgba(255,107,157,0.45), inset 0 0 0 3px rgba(255,255,255,0.25);
+    transition: transform 0.15s;
+  }
+  .rec-btn:hover { transform: scale(1.05); }
+  .rec-btn.recording { animation: pulse 1s ease-in-out infinite; }
+  .rec-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* 音源选择 */
+  .src-row { display: flex; gap: 8px; padding: 8px 18px 4px; }
+  .src-card {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.09);
+    transition: all 0.15s;
+  }
+  .src-card:hover { border-color: rgba(255,107,157,0.4); }
+  .src-card.active {
+    border-color: #FF6B9D;
+    background: rgba(255,107,157,0.12);
+    box-shadow: 0 0 0 1px rgba(255,107,157,0.3);
+  }
+  .src-card .src-icon { font-size: 16px; }
+  .src-card .src-name { font-size: 12px; font-weight: 700; color: #E9E4F5; }
+  .src-card .src-sub { font-size: 9.5px; color: #8F8AB0; line-height: 1.3; }
+  .src-card.disabled { opacity: 0.4; pointer-events: none; }
+
+  .hint { text-align: center; font-size: 11px; color: #8F8AB0; padding: 6px 18px 8px; }
+
+  .text-box-wrap { flex: 1; padding: 0 18px 12px; display: flex; flex-direction: column; min-height: 0; }
+  .text-box-label { font-size: 11px; color: #8F8AB0; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .text-box-label .live-tag {
+    font-size: 9px; padding: 1px 7px; border-radius: 99px; font-weight: 700;
+    background: rgba(255,107,157,0.18); color: #FF8FB0; display: none;
+  }
+  .text-box-label .live-tag.on { display: inline-block; animation: pulse 1.2s infinite; }
+  textarea {
+    flex: 1; resize: none; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px;
+    color: #E9E4F5; font-size: 13.5px; line-height: 1.7; outline: none; min-height: 120px;
+    font-family: inherit;
+  }
+  textarea:focus { border-color: rgba(255,107,157,0.5); }
+  textarea::placeholder { color: #6B6488; }
+
+  .actions { display: flex; gap: 10px; padding: 0 18px 16px; }
+  .action {
+    flex: 1; padding: 12px 0; border-radius: 12px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 700; color: #fff;
+    background: linear-gradient(120deg, #FF6B9D, #B794F6);
+    box-shadow: 0 4px 14px rgba(255,107,157,0.3);
+    transition: opacity 0.15s;
+  }
+  .action:hover { opacity: 0.9; }
+  .action:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action.ghost { background: rgba(255,255,255,0.08); color: #8F8AB0; box-shadow: none; }
+  .action.ghost:hover { background: rgba(255,107,157,0.12); color: #FFB8CF; }
+  .action.danger { background: rgba(248,113,113,0.15); color: #F87171; box-shadow: none; }
+
+  .err-box {
+    margin: 0 18px 10px; padding: 10px 14px; border-radius: 10px;
+    background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3);
+    color: #FCA5A5; font-size: 12px; line-height: 1.6; display: none;
+  }
+  .err-box.show { display: block; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <span class="mic-emoji">🎤</span>
+    <h1>语音助手</h1>
+    <div class="mode-tabs">
+      <button class="mode-tab on" id="tab-transcribe">📝 转写</button>
+      <button class="mode-tab" id="tab-qa">🎤 问答</button>
+    </div>
+    <button class="btn-close" id="btn-close" title="关闭">✕</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <div class="status-text" id="status-text">点击下方按钮开始录音</div>
+    <div class="status-time" id="status-time">00:00</div>
+  </div>
+
+  <!-- 进度条：录音中=录音时长进度；转写中=动画进度 -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <div class="text-box-wrap">
+    <div class="text-box-label">
+      <span>📝 转写结果（实时显示在这里）</span>
+      <span class="live-tag" id="live-tag">● 边录边转</span>
+    </div>
+    <textarea id="result" placeholder="正在聆听… 转写文字会实时出现在这里"></textarea>
+  </div>
+
+  <div class="src-row">
+    <div class="src-card" id="src-mic" data-src="mic" title="录制你的说话声">
+      <span class="src-icon">🎙️</span>
+      <div><div class="src-name">麦克风</div><div class="src-sub">我的声音</div></div>
+    </div>
+    <div class="src-card" id="src-sys" data-src="sys" title="录制电脑播放的声音（网课/视频/音乐）">
+      <span class="src-icon">🔊</span>
+      <div><div class="src-name">电脑声音</div><div class="src-sub">系统播放</div></div>
+    </div>
+    <div class="src-card" id="src-both" data-src="both" title="同时录制麦克风和电脑声音（听课提问）">
+      <span class="src-icon">🎙️+🔊</span>
+      <div><div class="src-name">两者</div><div class="src-sub">混合录制</div></div>
+    </div>
+  </div>
+
+  <div class="rec-btn-wrap">
+    <button class="rec-btn" id="rec-btn" title="开始 / 停止录音">🎤</button>
+  </div>
+  <div class="hint" id="hint">点击 🎤 开始录音 · 录音中文字实时显示在上方</div>
+
+  <div class="err-box" id="err-box"></div>
+
+  <div class="actions">
+    <button class="action ghost" id="btn-clear">清空</button>
+    <button class="action ghost" id="btn-speak" style="display:none" title="朗读 AI 回答（本地语音）">🔊 朗读</button>
+    <button class="action" id="btn-save" disabled>保存为笔记</button>
+  </div>
+
+<script>
+  const api = window.noteAPI
+  const dot = document.getElementById('status-dot')
+  const statusText = document.getElementById('status-text')
+  const statusTime = document.getElementById('status-time')
+  const recBtn = document.getElementById('rec-btn')
+  const errBox = document.getElementById('err-box')
+  const resultBox = document.getElementById('result')
+  const liveTag = document.getElementById('live-tag')
+  const btnSave = document.getElementById('btn-save')
+  const btnClear = document.getElementById('btn-clear')
+
+  let stream = null
+  let recorder = null
+  let chunks = []
+  let segCount = 0
+  let isTranscribing = false
+  let timer = null
+  let seconds = 0
+  let fullText = ''
+  let mode = 'transcribe' // transcribe 转写 | qa 语音问答
+  let lastAnswer = '' // 最近一次 AI 回答（朗读/保存用）
+  const progressWrap = document.getElementById('progress-wrap')
+  const progressBar = document.getElementById('progress-bar')
+  const speakBtn = document.getElementById('btn-speak')
+
+  // 模式切换
+  const setMode = (m) => {
+    mode = m
+    document.getElementById('tab-transcribe').classList.toggle('on', m === 'transcribe')
+    document.getElementById('tab-qa').classList.toggle('on', m === 'qa')
+    document.querySelector('.text-box-label span').textContent = m === 'qa'
+      ? '❓ 你的问题（录音转写，自动 AI 回答）' : '📝 转写结果（实时显示在这里）'
+    document.getElementById('hint').textContent = m === 'qa'
+      ? '点击 🎤 说问题 → 自动转写并 AI 回答（朗读）' : '点击 🎤 开始录音 · 录音中文字实时显示在上方'
+    speakBtn.style.display = m === 'qa' && lastAnswer ? 'inline-block' : 'none'
+    if (m === 'transcribe') { lastAnswer = ''; speakBtn.style.display = 'none' }
+  }
+  document.getElementById('tab-transcribe').addEventListener('click', () => setMode('transcribe'))
+  document.getElementById('tab-qa').addEventListener('click', () => setMode('qa'))
+
+  // 本地 TTS 朗读
+  async function speak(text) {
+    try {
+      const dataUri = await api.ttsSpeak(text)
+      if (dataUri) { const a = new Audio(dataUri); a.play() }
+    } catch (e) { /* ignore */ }
+  }
+  speakBtn.addEventListener('click', () => { if (lastAnswer) speak(lastAnswer) })
+
+  // 语音问答：问题文本 → AI 回答 → 显示 + 朗读
+  async function qaAsk(question) {
+    setStatus('transcribing', 'AI 思考中…')
+    setProgress('transcribing')
+    try {
+      const answer = await api.chatWithAI(question, '', [], null, 'qa')
+      lastAnswer = answer || '（AI 没有返回内容）'
+      resultBox.value = '❓ 问：' + question + '\n\n✨ 答：' + lastAnswer
+      setStatus('done', '回答完成 ✓')
+      setProgress(null)
+      speakBtn.style.display = 'inline-block'
+      await speak(lastAnswer) // 自动朗读
+    } catch (e) {
+      setStatus('', 'AI 回答失败：' + String(e.message || e).slice(0, 60))
+      setProgress(null)
+      try { api.logWrite('ERROR', 'Voice', '问答失败', String(e && e.message || e)) } catch (x) {}
+    }
+  }
+
+  // 进度条：录音=按 60s 参考填充；transcribing=不定进度动画；完成=隐藏
+  function setProgress(state) {
+    if (state === 'recording') {
+      progressWrap.classList.remove('indeterminate')
+      progressBar.style.width = Math.min((seconds / 60) * 100, 100) + '%'
+      progressWrap.classList.add('show')
+    } else if (state === 'transcribing') {
+      progressWrap.classList.add('indeterminate', 'show')
+    } else {
+      progressWrap.classList.remove('indeterminate', 'show')
+    }
+  }
+
+  // 计时器
+  function startTimer() {
+    seconds = 0
+    updateTime()
+    timer = setInterval(updateTime, 1000)
+  }
+  function stopTimer() { clearInterval(timer); timer = null }
+  function updateTime() {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0')
+    const s = String(seconds % 60).padStart(2, '0')
+    statusTime.textContent = m + ':' + s
+    if (timer) seconds++
+    // 录音中进度条随时长推进
+    if (timer && progressWrap.classList.contains('show') && !progressWrap.classList.contains('indeterminate')) {
+      progressBar.style.width = Math.min((seconds / 60) * 100, 100) + '%'
+    }
+  }
+
+  function setStatus(state, text) {
+    dot.className = 'status-dot'
+    if (state) dot.classList.add(state)
+    statusText.textContent = text
+  }
+  function showErr(msg) { errBox.textContent = msg; errBox.classList.add('show') }
+  function hideErr() { errBox.classList.remove('show') }
+  // 状态上报（主进程日志，便于诊断）
+  function report(tag, payload) {
+    try { api.logWrite('INFO', 'Voice', tag, JSON.stringify(payload || {})) } catch (e) {}
+  }
+
+  // 提取转写文本（主进程返回 {text, language, duration} 对象；兼容字符串）
+  function extractText(result) {
+    if (!result) return ''
+    if (typeof result === 'string') return result
+    if (typeof result.text === 'string') return result.text
+    return ''
+  }
+
+  // 增量转写：录音中把【从开头累积的完整音频】送去转写（边录边出字）
+  // 注意：不能只转单个 5 秒片段——MediaRecorder 的中间片段缺 webm 容器头，
+  // PyAV 解码报 "Invalid data found when processing input"。从开头累积的 Blob
+  // 才是完整容器，可正常解码。
+  async function transcribePartial() {
+    try {
+      const blob = new Blob(chunks, { type: recorder ? recorder.mimeType : 'audio/webm' })
+      report('增量转写触发', { chunks: chunks.length, blobKB: Math.round(blob.size / 1024) })
+      const buf = await blob.arrayBuffer()
+      const text = extractText(await api.transcribeAudio(buf))
+      report('增量转写完成', { textLen: text ? text.length : 0 })
+      if (text && text.trim()) {
+        fullText = text.trim()
+        resultBox.value = fullText
+        resultBox.scrollTop = resultBox.scrollHeight
+      }
+    } catch (e) {
+      report('增量转写失败(静默)', { err: String(e && e.message || e) })
+    }
+    finally { isTranscribing = false }
+  }
+
+  // 音源选择：mic=麦克风 / sys=电脑声音(系统音频) / both=两者混合
+  let audioSource = 'mic'
+  const srcCards = document.querySelectorAll('.src-card')
+  function setSource(src) {
+    audioSource = src
+    srcCards.forEach(c => c.classList.toggle('active', c.dataset.src === src))
+    const hint = document.getElementById('hint')
+    if (src === 'sys') hint.textContent = '将弹出屏幕/窗口选择框，选「整个屏幕」即可录制系统声音（无需真的录屏）'
+    else if (src === 'both') hint.textContent = '录制时会先请求麦克风权限，再弹出屏幕选择框捕获系统声音'
+    else hint.textContent = '录音完成后自动转写为文字 · 录音中会实时显示已转写片段'
+  }
+  srcCards.forEach(c => c.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') return
+    setSource(c.dataset.src)
+  }))
+  setSource('mic')
+
+  // 获取音频轨道：按所选音源（分别 try-catch，报出具体哪个音源失败）
+  async function getAudioTracks() {
+    const tracks = []
+    const issues = []
+    // 麦克风
+    if (audioSource === 'mic' || audioSource === 'both') {
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        tracks.push(...micStream.getAudioTracks())
+      } catch (e) {
+        issues.push('麦克风: ' + (e && e.message ? e.message : '不可用'))
+      }
+    }
+    // 电脑声音：getDisplayMedia 捕获系统音频（Windows loopback），video 只开最小占位后丢弃
+    if (audioSource === 'sys' || audioSource === 'both') {
+      try {
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: 2, height: 2, frameRate: 1 },
+          audio: true,
+        })
+        // 丢掉占位视频轨，只保留系统音频
+        displayStream.getVideoTracks().forEach(t => t.stop())
+        const sysAudio = displayStream.getAudioTracks()
+        if (!sysAudio.length) throw new Error('未能捕获系统声音')
+        tracks.push(...sysAudio)
+      } catch (e) {
+        issues.push('电脑声音: ' + (e && e.message ? e.message : '不可用'))
+      }
+    }
+    // both 模式：任一成功即可继续（保留成功的音源）
+    if (audioSource === 'both' && tracks.length === 0) {
+      throw new Error(issues.join('；') || '两个音源都不可用')
+    }
+    if (tracks.length === 0) {
+      throw new Error(issues.join('；') || '未获取到任何音源')
+    }
+    return tracks
+  }
+
+  // 开始录音
+  async function startRecording() {
+    hideErr()
+    try {
+      const tracks = await getAudioTracks()
+      // 混合所有音源轨道为一个流
+      const mixedStream = new MediaStream(tracks)
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
+      recorder = new MediaRecorder(mixedStream, mime ? { mimeType: mime, audioBitsPerSecond: 128000 } : undefined)
+      stream = mixedStream
+      chunks = []; segCount = 0; fullText = ''
+      resultBox.value = ''
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunks.push(e.data)
+          segCount++
+          // 边录边出字：把【从开头累积的完整音频】送去转写（单个片段缺容器头不可解码）。
+          // 前 2 个片段不转（音频太短无意义），且累积超过 45 秒后停止增量（避免越转越慢）
+          if (!isTranscribing && chunks.length >= 2 && segCount <= 9) {
+            isTranscribing = true
+            transcribePartial()
+          }
+        }
+      }
+      recorder.onstop = async () => {
+        try { tracks.forEach(t => t.stop()) } catch (e) {}
+        stopTimer()
+        setProgress('transcribing')
+        setStatus('transcribing', '正在转写完整录音…')
+        recBtn.disabled = true
+        liveTag.classList.remove('on')
+        try {
+          // 用全部音频做最终转写（比增量片段更准确，覆盖显示）
+          const fullBlob = new Blob(chunks, { type: recorder ? recorder.mimeType : 'audio/webm' })
+          report('录音停止', { chunks: chunks.length, blobKB: Math.round(fullBlob.size / 1024), secs: Math.round(fullBlob.size / 16000) })
+          if (fullBlob.size === 0) { setStatus('', '未录到音频，请重试'); recBtn.disabled = false; report('最终转写跳过', { reason: '空音频' }); return }
+          const text = extractText(await api.transcribeAudio(await fullBlob.arrayBuffer()))
+          if (text && text.trim()) {
+            fullText = text.trim()
+            resultBox.value = fullText
+            // 问答模式：转写完成后自动调 AI 回答 + 朗读
+            if (mode === 'qa') {
+              await qaAsk(fullText)
+            } else {
+              setStatus('done', '转写完成 ✓')
+              report('最终转写成功', { textLen: fullText.length })
+            }
+          } else {
+            setStatus('', '未检测到语音：请对着麦克风说话，或切换「电脑声音」录制系统音频')
+            report('最终转写空', {})
+          }
+        } catch (e) {
+          setStatus('', '转写失败：' + String(e.message || e).slice(0, 60))
+          // 失败详情上报主进程日志（必留痕，便于定位）
+          try { api.logWrite('ERROR', 'Voice', '最终转写失败', String(e && e.message || e)) } catch (x) {}
+        } finally {
+          recBtn.disabled = false
+          btnSave.disabled = !fullText.trim()
+          recBtn.classList.remove('recording')
+          recBtn.textContent = '🎤'
+          setProgress(null) // 转写结束，隐藏进度条
+        }
+      }
+
+      recorder.start(5000) // 每 5 秒产出片段
+      recBtn.classList.add('recording')
+      recBtn.textContent = '⏹'
+      liveTag.classList.add('on')
+      const srcName = audioSource === 'sys' ? '电脑声音' : audioSource === 'both' ? '麦克风+电脑声音' : '麦克风'
+      setStatus('recording', '正在聆听（' + srcName + '）… 点击停止')
+      setProgress('recording')
+      startTimer()
+    } catch (err) {
+      const why = err && err.message ? String(err.message) : '未知错误'
+      setStatus('', '音源获取失败')
+      // 转发到主进程日志便于诊断
+      try { api.logWrite('ERROR', 'Voice', '音源获取失败', JSON.stringify({ src: audioSource, err: why })) } catch (e) {}
+      // 把常见错误翻译成可理解的提示
+      const translate = (m) => {
+        if (/Not supported|NotSupported|no device|device/i.test(m)) return '未检测到该音源设备'
+        if (/Permission|denied|deny/i.test(m)) return '权限被拒绝'
+        return m
+      }
+      const lines = why.split('；').map(s => {
+        const [src, msg] = s.includes(':') ? s.split(/:(.+)/) : ['音源', s]
+        return '· ' + src.trim() + '：' + translate(String(msg || s).trim())
+      })
+      showErr(lines.join('\n') + '\n提示：若只需录电脑声音（网课），请选择「🔊 电脑声音」；麦克风需系统存在麦克风设备。')
+    }
+  }
+
+  // 停止录音
+  function stopRecording() {
+    if (recorder && recorder.state === 'recording') recorder.stop()
+  }
+
+  recBtn.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') stopRecording()
+    else startRecording()
+  })
+
+  btnSave.addEventListener('click', async () => {
+    const text = resultBox.value.trim()
+    if (!text) return
+    btnSave.disabled = true
+    try {
+      await api.saveNote({
+        title: '语音笔记 ' + new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+        courseId: '',
+        tags: [],
+        content: text,
+      })
+      setStatus('done', '已保存到笔记 ✓')
+      btnSave.textContent = '已保存 ✓'
+      setTimeout(() => { btnSave.textContent = '保存为笔记'; btnSave.disabled = !resultBox.value.trim() }, 2000)
+    } catch (e) {
+      setStatus('', '保存失败')
+      btnSave.disabled = false
+    }
+  })
+
+  btnClear.addEventListener('click', () => {
+    resultBox.value = ''
+    fullText = ''
+    btnSave.disabled = true
+    btnSave.textContent = '保存为笔记'
+  })
+
+  document.getElementById('btn-close').addEventListener('click', () => {
+    try { if (recorder && recorder.state === 'recording') recorder.stop() } catch (e) {}
+    try { api.closeVoiceWindow && api.closeVoiceWindow() } catch (e) {}
+  })
+
+  // 窗口打开后自动开始录音（点悬浮球"语音转文字" = 打开窗口 + 立即录音）
+  setTimeout(() => { startRecording() }, 600)
+</script>
+</body>
+</html>

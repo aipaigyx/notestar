@@ -1,16 +1,18 @@
 <template>
-  <div class="app-container" :class="{ 'theme-dark': themeMode === 'dark' }">
-    <Sidebar :active-route="currentRoute" @navigate="handleNavigate" @select-course="handleSelectCourse" @toggle-theme="toggleTheme" :theme-mode="themeMode" />
-    <main class="page-view">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
-    </main>
-    <!-- 全局弹窗组件 -->
-    <GlobalDialog ref="globalDialogRef" />
-  </div>
+  <OmphalosStage>
+    <div class="app-container">
+      <Sidebar :active-route="currentRoute" @navigate="handleNavigate" @select-course="handleSelectCourse" />
+      <main class="page-view">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
+      <!-- 全局弹窗组件 -->
+      <GlobalDialog ref="globalDialogRef" />
+    </div>
+  </OmphalosStage>
 </template>
 
 <script setup lang="ts">
@@ -18,8 +20,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import GlobalDialog from './components/GlobalDialog.vue'
+import OmphalosStage from './themes/OmphalosStage.vue'
 import { setDialogRef, showToast } from './composables/useDialog'
-import { getBackupInfo, isElectron, loadQuizData, loadQuizMastery, dueReviewCount } from './store'
+import { getBackupInfo, isElectron, loadQuizData, loadQuizMastery, dueReviewCount, pendingNoteOpen, frontendLogger } from './store'
 
 const router = useRouter()
 const route = useRoute()
@@ -62,27 +65,7 @@ const checkQuizReminder = async () => {
   } catch (e) { /* ignore */ }
 }
 
-// 主题模式：light（亮色）→ dark（暗色）→ paimon（派蒙）循环切换
-const themeMode = ref<'light' | 'dark' | 'paimon'>('light')
-
-const applyTheme = (mode: 'light' | 'dark' | 'paimon') => {
-  themeMode.value = mode
-  document.documentElement.setAttribute('data-theme', mode)
-  localStorage.setItem('notestar-theme', mode)
-}
-
-const toggleTheme = () => {
-  const next = themeMode.value === 'light' ? 'dark' : themeMode.value === 'dark' ? 'paimon' : 'light'
-  applyTheme(next)
-}
-
-// 初始化主题
-onMounted(() => {
-  const saved = localStorage.getItem('notestar-theme')
-  if (saved === 'dark' || saved === 'paimon') {
-    applyTheme(saved)
-  }
-})
+// 主题固定为翁法罗斯皮肤（移除旧的多主题循环切换：light/dark/paimon）
 
 // 启动备份提醒 + 复习提醒
 onMounted(() => {
@@ -116,6 +99,30 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+  // 主进程导航事件（复习提醒点击跳转等）
+  if ((window as any).noteAPI?.onNavigate) {
+    (window as any).noteAPI.onNavigate((path: string) => {
+      router.push(path)
+    })
+  }
+  // 悬浮球/语音等后台创建新笔记后的跳转通知（全局常驻监听，避免 NoteOrganize 未挂载时丢事件）
+  let _offNotesOpen: (() => void) | null = null
+  if ((window as any).noteAPI?.onNotesOpen) {
+    _offNotesOpen = (window as any).noteAPI.onNotesOpen((noteId: string) => {
+      try {
+        if (!noteId) return
+        frontendLogger.info('App.vue', '收到 notes:open 广播，准备跳转', { noteId, path: route.path })
+        // 暂存 id 给 NoteOrganize 消费（即使 NoteOrganize 还没挂载也不丢）
+        pendingNoteOpen.value = noteId
+        // 路由切到编辑页（已经在 /organize 或 /notes 就不用切）
+        if (route.path !== '/organize' && route.path !== '/notes' && route.path !== '/') {
+          router.push('/organize').catch(err => frontendLogger.warn('App.vue', '跳转到 /organize 失败', err))
+        }
+      } catch (e) {
+        frontendLogger.error('App.vue', 'notes:open 处理异常', e)
+      }
+    })
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)

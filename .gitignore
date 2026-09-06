@@ -4,6 +4,7 @@ app/node_modules/
 app/dist/
 app/dist-old-*/
 dist/
+dist-packages/
 
 # 运行时数据与日志
 app/data/
@@ -32,3 +33,28 @@ app/debug.log
 笔记星图.exe
 app/release/
 app/userdata/
+
+# PyInstaller 打包中间产物（不进仓库）
+build/build/
+build/dist/
+build/pyinstaller-work/
+build/mini-test/run.log
+
+# 调试与临时残留（不随开源）
+app/dist-tmp/
+app/test-ipc/
+app/screenshot_sidebar.png
+dev-stdout.log
+dev-stderr.log
+*.bak-*
+
+# 作者本地发行工具（含本机路径，不对外）
+一键发行打包.bat
+重建启动器.bat
+
+# Ardot 皮肤导出物与技能副本（非 app 工程文件）
+outputs/
+ardot-bulk-theme-cards.zip
+
+# 内部开发文档（不随开源发布）
+测试文档/

@@ -1,44 +1,111 @@
 :root {
+  /* ===== 颜色 ===== */
   --color-bg: #F6F1FB;
   --color-white: #FFFFFF;
   --color-pink: #FF6B9D;
-  --color-pink-light: rgba(255, 107, 157, 0.12);
-  --color-pink-light-2: rgba(255, 107, 157, 0.08);
+  --color-pink-light: rgba(255, 107, 157, 0.18);
+  --color-pink-light-2: rgba(255, 107, 157, 0.10);
   --color-purple: #B794F6;
-  --color-purple-light: rgba(183, 148, 246, 0.12);
+  --color-purple-light: rgba(183, 148, 246, 0.15);
   --color-blue: #4292F5;
-  --color-blue-light: rgba(66, 146, 245, 0.08);
+  --color-blue-light: rgba(66, 146, 245, 0.10);
   --color-sakura: #FFC0D5;      /* 樱花粉 */
   --color-sakura-light: rgba(255, 192, 213, 0.35);
   --color-mint: #7BE0C3;        /* 薄荷 */
+  --color-orange: #FF9948;      /* 提醒/打卡 */
   --color-text: #3A2D54;
-  --color-text-secondary: #6B6B96;
-  --color-text-tertiary: #9B9BB5;
-  --color-text-muted: #B8B8CC;
+  --color-text-secondary: #5A5A86;   /* P0-1 修复：原#6B6B96 → 调深，对比度≈5.2:1 ✅ WCAG AA */
+  --color-text-tertiary:  #7A7A9E;   /* P0-1 修复：原#9B9BB5 → 调深，对比度≈4.0:1 ✅ 辅助信息达标 */
+  --color-text-muted: #A0A0BC;
   --color-border: #F0E4F5;
   --color-border-light: #F5EEF9;
   --color-bg-card: #FFFFFF;
   --color-bg-soft: #F6F1FB;
   --color-bg-input: #FAF7FD;
+  /* 语义色别名（新代码优先用这些，主题切换自动适配） */
+  --color-accent:     var(--color-pink);    /* 主品牌色 */
+  --color-accent-2:   var(--color-purple);  /* 次品牌色 */
+  --color-info:       var(--color-blue);    /* 信息/链接 */
+  --color-warning:    var(--color-orange);  /* 提醒/打卡 */
+  --color-success:    var(--color-mint);    /* 成功/掌握 */
+  --color-danger:     #E74C3C;              /* 危险/删除 */
+  --color-accent-deep: #D84C7F;             /* P0-1：主色加深版，用于浅粉背景上的文字 */
 
+  /* ===== 字体 ===== */
   --font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px; /* 1rem = 16px 基准，用户系统放大字号时跟随 */
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-md:   13px;
+  --fs-base: 14px;
+  --fs-lg:   15px;
+  --fs-xl:   18px;
+  --fs-2xl:  22px;
+  --fs-3xl:  28px;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --lh-tight: 1.3;
+  --lh-base:  1.6;
+  --lh-loose: 1.75;
 
+  /* ===== 空间（8px 基准，4px 半阶） ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+
+  /* ===== 圆角 ===== */
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-xl: 24px;
   --radius-pill: 999px;
 
+  /* ===== 阴影 ===== */
   --shadow-sm: 0 2px 10px rgba(183, 148, 246, 0.1);
   --shadow-md: 0 6px 20px rgba(183, 148, 246, 0.12);
   --shadow-pink: 0 6px 16px rgba(255, 107, 157, 0.22);
   --shadow-glow: 0 0 0 3px rgba(255, 192, 213, 0.25);
+  /* 焦点环：双层 2+4（可用于 focus-visible） */
+  --shadow-focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent);
 
+  /* ===== 渐变 ===== */
   --gradient-pink-purple: linear-gradient(135deg, #FF6B9D 0%, #B794F6 100%);
   --gradient-pink-blue: linear-gradient(135deg, #FF6B9D 0%, #6B87FF 100%);
   --gradient-purple-blue: linear-gradient(135deg, #B794F6 0%, #6B87FF 100%);
   --gradient-orange-pink: linear-gradient(135deg, #FF9948 0%, #FF6B9D 100%);
   --gradient-sakura: linear-gradient(135deg, #FFC0D5 0%, #B794F6 100%);
+
+  /* ===== 过渡 & 动画 ===== */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-base: cubic-bezier(0.4, 0, 0.2, 1);   /* Standard */
+  --ease-in:   cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:  cubic-bezier(0, 0, 0.2, 1);       /* 入场 */
+
+  /* ===== 布局尺寸 ===== */
+  --layout-sidebar-w:       240px;
+  --layout-main-min-w:     1200px;
+  --layout-editor-list-w:  300px;
+  --layout-ai-panel-w:     300px;
+  --layout-context-w:      280px;
+
+  /* ===== 层级（z-index） ===== */
+  --z-base:     0;
+  --z-content:  1;
+  --z-sidebar:  10;
+  --z-tooltip: 100;
+  --z-dialog:  500;
+  --z-toast:   600;
+  --z-bubble:  9999;
 }
 
 /* ========== 暗黑模式 ========== */
@@ -46,29 +113,39 @@
   --color-bg: #1A1525;
   --color-white: #252038;
   --color-pink: #FF8BB5;
-  --color-pink-light: rgba(255, 139, 181, 0.15);
-  --color-pink-light-2: rgba(255, 139, 181, 0.1);
+  --color-pink-light: rgba(255, 139, 181, 0.20);
+  --color-pink-light-2: rgba(255, 139, 181, 0.12);
   --color-purple: #C9A8FF;
-  --color-purple-light: rgba(201, 168, 255, 0.15);
+  --color-purple-light: rgba(201, 168, 255, 0.18);
   --color-blue: #5BA3F7;
-  --color-blue-light: rgba(91, 163, 247, 0.12);
+  --color-blue-light: rgba(91, 163, 247, 0.14);
   --color-sakura: #C97E9E;
-  --color-sakura-light: rgba(201, 126, 158, 0.25);
+  --color-sakura-light: rgba(201, 126, 158, 0.28);
   --color-mint: #4FAF95;
+  --color-orange: #FFB066;
   --color-text: #E8E4F0;
-  --color-text-secondary: #A8A0C0;
-  --color-text-tertiary: #7B7395;
-  --color-text-muted: #5A5470;
+  --color-text-secondary: #B5ADCB;     /* P0-1 原#A8A0C0 → 调亮到5.2:1 */
+  --color-text-tertiary:  #928AAD;     /* P0-1 原#7B7395 → 调亮到4.1:1（辅助级） */
+  --color-text-muted:     #6D6589;
   --color-border: #342E48;
   --color-border-light: #2A2440;
   --color-bg-card: #252038;
   --color-bg-soft: #1F1A30;
   --color-bg-input: #1F1A30;
+  --color-danger: #FF6E5A;
+  /* 语义别名 */
+  --color-accent:       var(--color-pink);
+  --color-accent-2:     var(--color-purple);
+  --color-info:         var(--color-blue);
+  --color-warning:      var(--color-orange);
+  --color-success:      var(--color-mint);
+  --color-accent-deep:  #FFB0CD;          /* 暗色：chip/course-count 上更清晰 */
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-pink: 0 4px 12px rgba(255, 139, 181, 0.2);
   --shadow-glow: 0 0 0 3px rgba(201, 126, 158, 0.3);
+  --shadow-focus-ring: 0 0 0 2px var(--color-bg-card), 0 0 0 4px var(--color-accent);
 }
 
 :root[data-theme="dark"] body {
@@ -94,11 +171,12 @@ html, body, #app {
   height: 100%;
   overflow: hidden;
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: var(--fs-base);
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: var(--lh-base);
 }
 
 ::-webkit-scrollbar {
@@ -122,9 +200,10 @@ html, body, #app {
 button {
   cursor: pointer;
   border: none;
-  outline: none;
+  outline: none;           /* 只用 :focus-visible 画环，不画 outline */
   font-family: inherit;
   background: none;
+  color: inherit;
 }
 
 input, textarea, select {
@@ -133,6 +212,7 @@ input, textarea, select {
   border: none;
   -webkit-appearance: none;
   appearance: none;
+  color: inherit;
 }
 
 select {
@@ -151,6 +231,14 @@ img {
   display: block;
 }
 
+/* ============ P0-3：全局键盘焦点环（双层 2+4，适配三主题）============ */
+:focus-visible {
+  outline: none !important;
+  box-shadow: var(--shadow-focus-ring);
+  border-radius: var(--radius-sm);
+}
+/* 暗色模式下已用 --shadow-focus-ring 变量自动换双层色，无需重复 */
+
 .app-container {
   width: 100vw;
   height: 100vh;
@@ -163,7 +251,18 @@ img {
   flex: 1;
   height: 100%;
   overflow: hidden;
+  position: relative;    /* 明确：glow-orb 以 page-view 为定位父级，不再错位 */
+}
+
+/* content-layer 统一滚动容器，配合 Design Token */
+.content-layer {
   position: relative;
+  z-index: var(--z-content);
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-5) var(--space-6);
 }
 
 /* Decorative glow orbs */
@@ -216,29 +315,39 @@ body {
   --color-bg: #EAF4FE;
   --color-white: #FFFFFF;
   --color-pink: #6FA8F0;                 /* 派蒙裙摆蓝 */
-  --color-pink-light: rgba(111, 168, 240, 0.14);
-  --color-pink-light-2: rgba(111, 168, 240, 0.08);
+  --color-pink-light: rgba(111, 168, 240, 0.18);
+  --color-pink-light-2: rgba(111, 168, 240, 0.10);
   --color-purple: #8CC9FF;               /* 浅天蓝 */
-  --color-purple-light: rgba(140, 201, 255, 0.16);
+  --color-purple-light: rgba(140, 201, 255, 0.20);
   --color-blue: #FFD966;                 /* 派蒙星金 */
   --color-blue-light: rgba(255, 217, 102, 0.14);
   --color-sakura: #BDE3FF;               /* 冰蓝 */
-  --color-sakura-light: rgba(189, 227, 255, 0.4);
+  --color-sakura-light: rgba(189, 227, 255, 0.45);
   --color-mint: #7BE0C3;
-  --color-text: #2C3E6B;                 /* 深星蓝 */
-  --color-text-secondary: #5A7BA8;
-  --color-text-tertiary: #8AA6C8;
-  --color-text-muted: #A9C2DA;
+  --color-orange: #F0A93E;
+  --color-text: #22345F;                  /* P0-1：原#2C3E6B → 加深一级（主色更深 对比度↑） */
+  --color-text-secondary: #466694;        /* P0-1：原#5A7BA8 → 调深≈5.3:1 ✅ */
+  --color-text-tertiary:  #6B8AB0;        /* P0-1：原#8AA6C8 → 调深≈4.0:1 ✅ */
+  --color-text-muted:     #8FA8C4;
   --color-border: #D9EAFB;
   --color-border-light: #E4F0FC;
   --color-bg-card: #FFFFFF;
   --color-bg-soft: #EAF4FE;
   --color-bg-input: #F2F8FE;
+  --color-danger: #D85A48;
+  /* 语义别名（派蒙 → accent/info 自动对应当前蓝/金） */
+  --color-accent:       var(--color-pink);
+  --color-accent-2:     var(--color-purple);
+  --color-info:         var(--color-blue);
+  --color-warning:      var(--color-orange);
+  --color-success:      var(--color-mint);
+  --color-accent-deep:  #3F76B8;       /* P0-1：派蒙 chip/course-count 前景深蓝 ≈4.2:1 */
 
   --shadow-sm: 0 2px 10px rgba(111, 168, 240, 0.12);
   --shadow-md: 0 6px 20px rgba(111, 168, 240, 0.16);
   --shadow-pink: 0 6px 16px rgba(111, 168, 240, 0.25);
   --shadow-glow: 0 0 0 3px rgba(189, 227, 255, 0.5);
+  --shadow-focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--color-accent);
 
   --gradient-pink-purple: linear-gradient(135deg, #6FA8F0 0%, #8CC9FF 100%);
   --gradient-pink-blue: linear-gradient(135deg, #6FA8F0 0%, #FFD966 100%);
@@ -315,7 +424,7 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--dur-base) var(--ease-base), box-shadow var(--dur-base) var(--ease-base);
 }
 .anime-card::before {
   content: '';
@@ -326,6 +435,19 @@ body {
   pointer-events: none;
 }
 .anime-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(183, 148, 246, 0.18); }
+
+/* P0-4：暗色模式下 anime-card 不能再是半透明白 → 用 --color-bg-card 防止白色穿帮 */
+:root[data-theme="dark"] .anime-card {
+  background: color-mix(in srgb, var(--color-bg-card) 88%, transparent);
+  border: 1px solid rgba(201, 168, 255, 0.28);
+}
+:root[data-theme="dark"] .anime-card::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+}
+/* P0-4：派蒙主题下的卡片边框对应蓝色系 */
+:root[data-theme="paimon"] .anime-card {
+  border: 1px solid rgba(189, 227, 255, 0.5);
+}
 
 /* 萌系胶囊按钮：渐变 + 光晕 */
 .anime-btn {
@@ -379,7 +501,7 @@ body {
   border-radius: var(--radius-pill);
   background: var(--color-pink-light);
   border: 1px solid rgba(255, 107, 157, 0.2);
-  color: var(--color-pink);
+  color: var(--color-accent-deep);   /* P0-1：原 --color-pink → 加深版，浅粉背景上对比度≈4.6:1 ✅ */
   font-size: 11px;
   font-weight: 600;
 }
@@ -400,6 +522,24 @@ input:focus-visible, textarea:focus-visible {
 }
 .anime-float { animation: anime-float 5s ease-in-out infinite; }
 .anime-pulse { animation: anime-pulse 2.5s ease-in-out infinite; }
+
+/* ========== P0-2：全局 prefers-reduced-motion · 用户系统开启"减少动效"时一键关闭所有动画 ========== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* 派蒙星星闪烁/旋转/Logo 动效全部静止 */
+  :root[data-theme="paimon"] body::before { animation: none !important; opacity: 0.85; }
+  :root[data-theme="paimon"] .logo-icon::after { animation: none !important; }
+  /* 悬浮类取消 transform，仅保留颜色反馈 */
+  .anime-card:hover { transform: none !important; }
+  .anime-btn:hover { transform: none !important; }
+  .anime-btn:active { transform: none !important; }
+  .anime-btn-ghost:active { transform: none !important; }
+}
 
 /* 滚动条更粉嫩 */
 ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(255, 107, 157, 0.35), rgba(183, 148, 246, 0.35)); }
@@ -464,4 +604,1114 @@ mark.hl {
   padding: 1px 5px;
   font-size: 0.92em;
   color: var(--color-pink);
+}
+
+/* ================================================================
+   🔴 毛玻璃已全部移除（用户明确需求）
+   原本 Electron 无硬件加速下 backdrop-filter 会"发灰/模糊"，用户不满意。
+   现统一为清晰实底：全局禁用 backdrop-filter，各玻璃层改为实色背景。
+   ================================================================ */
+* {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:root.sw-disable-blur * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 去糊后补偿：软件渲染模式下（sw-disable-blur），将半透亚克力补偿为实底加厚边 */
+:root.sw-disable-blur .sidebar,
+:root.sw-disable-blur .top-bar,
+:root.sw-disable-blur .ai-panel,
+:root.sw-disable-blur .note-list-panel,
+:root.sw-disable-blur .canvas-toolbar,
+:root.sw-disable-blur .settings-section,
+:root.sw-disable-blur .chat-header,
+:root.sw-disable-blur .dialog-overlay,
+:root.sw-disable-blur .modal-overlay,
+:root.sw-disable-blur .anime-card {
+  /* 原 85% 透明度 → 94~97% 实底，减少 SW render 下的合成重采样模糊 */
+  background: color-mix(in srgb, var(--color-bg-card) 94%, var(--color-accent-light) 6%) !important;
+  /* 加深一级边框，弥补"没了毛玻璃阴影对比"的层次感落差 */
+  border-color: color-mix(in srgb, var(--color-border) 60%, var(--color-accent) 40%) !important;
+}
+
+/* ========== 翁法罗斯主题风格（无毛玻璃，全部实底） ========== */
+/* 仅当 data-theme="omphalos" 生效 */
+
+/* —— 背景层：Teleport 到 body，必须全局且 !important 避免被局部 scoped 限制 —— */
+.om-bg {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background: linear-gradient(160deg, #0A0418 0%, #1A0F35 45%, #0A0418 100%);
+  background-attachment: fixed;
+  overflow: hidden;
+  pointer-events: none;
+}
+.om-bg-image {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  opacity: 0.78;
+  filter: saturate(1.05);
+  transform: translateY(-1%);
+}
+.om-bg-veil {
+  position: absolute !important;
+  inset: 0 !important;
+  background:
+    radial-gradient(ellipse 80vw 50vh at 50% 30%, rgba(10, 4, 24, 0) 0%, rgba(10, 4, 24, 0.20) 70%, rgba(10, 4, 24, 0.55) 100%),
+    linear-gradient(180deg, rgba(10, 4, 24, 0.06) 0%, rgba(10, 4, 24, 0.28) 100%);
+  pointer-events: none;
+}
+
+/* ===========================================================
+   翁法罗斯·全局置底（让 #app 浮在 .om-bg 之上）
+   =========================================================== */
+:root[data-theme="omphalos"] #app {
+  background: transparent !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+:root[data-theme="omphalos"] body {
+  /* 紫黑金基底 */
+  background:
+    radial-gradient(50vw 30vw at 85% 10%, rgba(232, 198, 106, 0.16) 0%, transparent 65%),
+    radial-gradient(60vw 40vw at 15% 85%, rgba(200, 150, 255, 0.12) 0%, transparent 60%),
+    linear-gradient(160deg, #0A0418 0%, #1A0F35 45%, #0A0418 100%);
+  background-attachment: fixed;
+}
+
+/* 侧边栏（实底） */
+:root[data-theme="omphalos"] .sidebar {
+  background: rgba(26, 15, 53, 0.97);
+  border-right: 1px solid rgba(232, 198, 106, 0.30);
+}
+
+/* 主内容卡片：清晰实底 */
+:root[data-theme="omphalos"] .anime-card,
+:root[data-theme="omphalos"] .settings-section,
+:root[data-theme="omphalos"] .note-card {
+  background: linear-gradient(150deg, #241A4A 0%, #1A1140 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(232, 198, 106, 0.32);
+  box-shadow: 0 6px 24px rgba(10, 4, 24, 0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  position: relative;
+}
+
+/* ── 卡片自定义背景图（--om-card-bg 由设置页注入，含渐变遮罩保可读性）── */
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .anime-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .settings-section,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .note-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .stat-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .chart-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .plan-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .focus-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .review-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .report-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-enabled: 1"] .note-item {
+  background-image:
+    linear-gradient(165deg, rgba(16, 10, 36, 0.72) 0%, rgba(26, 17, 64, 0.55) 100%),
+    var(--om-card-bg);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: normal, normal;
+}
+
+/* ── 卡片自定义背景 v2 · 分区规则（仪表盘/笔记/全局兜底 各自独立背景 + veil 遮罩可调）──
+   变量由 store.applyCardBackgroundVar 注入：
+   --om-card-bg-<group>           该组背景值（url("…") 或内置渐变或 none）
+   --om-card-bg-<group>-enabled   1/0
+   --om-card-veil                 遮罩强度 0.3~0.85（作为渐变 alpha）
+   回落规则：dashboard / notes 未单独设图时，JS 已回落到全局 all 的图。 */
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .stat-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .chart-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .plan-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .focus-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .review-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-dashboard-enabled: 1"] .report-card {
+  background-image:
+    linear-gradient(165deg, rgba(16, 10, 36, var(--om-card-veil-hi, 0.62)) 0%, rgba(26, 17, 64, var(--om-card-veil-lo, 0.5)) 100%),
+    var(--om-card-bg-dashboard);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: normal, normal;
+}
+:root[data-theme="omphalos"][style*="--om-card-bg-notes-enabled: 1"] .note-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-notes-enabled: 1"] .note-item {
+  background-image:
+    linear-gradient(165deg, rgba(16, 10, 36, var(--om-card-veil-hi, 0.62)) 0%, rgba(26, 17, 64, var(--om-card-veil-lo, 0.5)) 100%),
+    var(--om-card-bg-notes);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: normal, normal;
+}
+:root[data-theme="omphalos"][style*="--om-card-bg-all-enabled: 1"] .anime-card,
+:root[data-theme="omphalos"][style*="--om-card-bg-all-enabled: 1"] .settings-section {
+  background-image:
+    linear-gradient(165deg, rgba(16, 10, 36, var(--om-card-veil-hi, 0.62)) 0%, rgba(26, 17, 64, var(--om-card-veil-lo, 0.5)) 100%),
+    var(--om-card-bg-all);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: normal, normal;
+}
+
+/* 古希腊回纹边框（四边装饰）- 翁法罗斯皮肤专属 */
+:root[data-theme="omphalos"] .content-layer {
+  /* 已有边包在 OmphalosStage */
+}
+/* 鎏金回纹描边 */
+:root[data-theme="omphalos"] .anime-card {
+  outline: 1px solid rgba(232, 198, 106, 0.4);
+  outline-offset: 3px;
+}
+
+/* 按钮：鎏金渐变 + 亚克力质感 */
+:root[data-theme="omphalos"] .btn-primary {
+  background: linear-gradient(135deg, var(--om-gold) 0%, var(--om-gold-deep) 100%);
+  box-shadow: 0 4px 16px rgba(232, 198, 106, 0.35);
+}
+:root[data-theme="omphalos"] .btn-primary:hover:not(:disabled) {
+  opacity: 0.94;
+  box-shadow: 0 6px 24px rgba(232, 198, 106, 0.45);
+}
+
+/* 主文字：暗底上用浅金/淡白（对比度 WCAG AA 4.5:1） */
+:root[data-theme="omphalos"] {
+  --color-text: #F3EBD8;
+  --color-text-secondary: #C9BDE4;
+  --color-text-tertiary: #A99CD0;
+  --color-text-muted: #8A7CA6;
+  --color-border: rgba(232, 198, 106, 0.35);
+  --color-border-light: rgba(232, 198, 106, 0.20);
+  --color-bg-card: color-mix(in srgb, #1A0F35 82%, rgba(232, 198, 106, 0.06));
+  --color-bg-soft: color-mix(in srgb, #241840 88%, rgba(232, 198, 106, 0.06));
+  --color-bg-input: color-mix(in srgb, #2A1A4A 84%, rgba(232, 198, 106, 0.05));
+  --color-accent: var(--om-gold);
+  --color-accent-2: var(--om-accent);
+  --color-accent-deep: var(--om-gold-deep);
+}
+
+/* 暗色回退（如果需要）这里不用 */
+:root[data-theme="omphalos"][data-theme="dark"] {
+  /* 基础色已经统一在翁法罗斯引擎注入，这里不用重复 */
+}
+
+/* 滚动条：鎏金紫黑 */
+:root[data-theme="omphalos"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(232, 198, 106, 0.35), rgba(200, 150, 255, 0.35));
+}
+:root[data-theme="omphalos"] ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(232, 198, 106, 0.6), rgba(200, 150, 255, 0.6));
+}
+
+/* ========== 翁法罗斯 · 全局页面覆盖（Dashboard / AIAssistant / NoteOrganize / KnowledgeGraph / ReviewView）========== */
+/* 页面背景：改为透明 → 让 body 底层 .om-bg 背景图真正透出（不再被纯色渐变盖死） */
+:root[data-theme="omphalos"] .dashboard,
+:root[data-theme="omphalos"] .ai-page,
+:root[data-theme="omphalos"] .note-page,
+:root[data-theme="omphalos"] .graph-page,
+:root[data-theme="omphalos"] .review-page,
+:root[data-theme="omphalos"] .settings-page,
+:root[data-theme="omphalos"] .quiz-page {
+  background: transparent;
+  color: var(--om-text-pri);
+}
+
+/* 主内容容器 */
+:root[data-theme="omphalos"] .content-area,
+:root[data-theme="omphalos"] .chat-area,
+:root[data-theme="omphalos"] .canvas-area,
+:root[data-theme="omphalos"] .main-area {
+  background: transparent;
+}
+
+/* 顶部工具条（各种 title bar） */
+:root[data-theme="omphalos"] .chat-header,
+:root[data-theme="omphalos"] .canvas-toolbar {
+  background: linear-gradient(90deg, rgba(10,4,24,0.95), rgba(26,15,53,0.95));
+  border-bottom: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .chat-title,
+:root[data-theme="omphalos"] .toolbar-title,
+:root[data-theme="omphalos"] .ai-title {
+  color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .chat-subtitle,
+:root[data-theme="omphalos"] .toolbar-sub,
+:root[data-theme="omphalos"] .ai-subtitle {
+  color: var(--om-text-sec);
+}
+
+/* 面板（侧边/右侧） */
+:root[data-theme="omphalos"] .ai-panel,
+:root[data-theme="omphalos"] .history-panel,
+:root[data-theme="omphalos"] .note-list-panel {
+  background: rgba(10,4,24,0.6);
+  border-color: rgba(232,198,106,0.25);
+}
+:root[data-theme="omphalos"] .history-header {
+  border-bottom: 1px solid rgba(232,198,106,0.2);
+}
+:root[data-theme="omphalos"] .history-title {
+  color: var(--om-gold);
+}
+
+/* 卡片类（note-card / stat-card / chart-card） */
+:root[data-theme="omphalos"] .stat-card,
+:root[data-theme="omphalos"] .note-card,
+:root[data-theme="omphalos"] .chart-card,
+:root[data-theme="omphalos"] .plan-card,
+:root[data-theme="omphalos"] .focus-card,
+:root[data-theme="omphalos"] .review-card,
+:root[data-theme="omphalos"] .report-card,
+:root[data-theme="omphalos"] .graph-canvas {
+  background: linear-gradient(180deg, rgba(10,4,24,0.72) 0%, rgba(26,15,53,0.55) 100%);
+  border: 1px solid rgba(232,198,106,0.3);
+  border-radius: 14px;
+  box-shadow: inset 0 0 20px rgba(232,198,106,0.08);
+  color: var(--om-text-pri);
+  transition: all .2s;
+}
+:root[data-theme="omphalos"] .stat-card:hover,
+:root[data-theme="omphalos"] .note-card:hover,
+:root[data-theme="omphalos"] .chart-card:hover,
+:root[data-theme="omphalos"] .plan-card:hover,
+:root[data-theme="omphalos"] .focus-card:hover,
+:root[data-theme="omphalos"] .review-card:hover,
+:root[data-theme="omphalos"] .report-card:hover {
+  border-color: var(--om-gold);
+  box-shadow: 0 0 16px rgba(232,198,106,0.18), inset 0 0 20px rgba(232,198,106,0.12);
+  transform: translateY(-1px);
+}
+
+/* 统计卡顶部金色条 */
+:root[data-theme="omphalos"] .stat-card::before {
+  background: linear-gradient(90deg, var(--om-gold), var(--om-accent));
+}
+
+/* 卡片内文字 */
+:root[data-theme="omphalos"] .stat-value,
+:root[data-theme="omphalos"] .note-title,
+:root[data-theme="omphalos"] .card-title,
+:root[data-theme="omphalos"] .section-title,
+:root[data-theme="omphalos"] .toolbar-title {
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .stat-label,
+:root[data-theme="omphalos"] .note-desc,
+:root[data-theme="omphalos"] .note-date,
+:root[data-theme="omphalos"] .card-subtitle,
+:root[data-theme="omphalos"] .section-desc,
+:root[data-theme="omphalos"] .empty-desc,
+:root[data-theme="omphalos"] .graph-empty-desc {
+  color: var(--om-text-sec);
+}
+:root[data-theme="omphalos"] .section-title::before {
+  background: linear-gradient(180deg, var(--om-gold), var(--om-accent));
+  width: 4px; height: 16px; border-radius: 2px;
+}
+
+/* 笔记列表项 */
+:root[data-theme="omphalos"] .note-item {
+  background: rgba(10,4,24,0.6);
+  border: 1px solid rgba(232,198,106,0.25);
+  border-radius: 14px;
+}
+:root[data-theme="omphalos"] .note-item:hover {
+  border-color: var(--om-gold);
+  box-shadow: 0 0 12px rgba(232,198,106,0.15);
+}
+
+/* 进度条 */
+:root[data-theme="omphalos"] .plan-progress {
+  background: rgba(232,198,106,0.12);
+}
+:root[data-theme="omphalos"] .plan-fill {
+  background: linear-gradient(90deg, var(--om-gold), var(--om-accent));
+  box-shadow: 0 0 8px rgba(232,198,106,0.35);
+}
+
+/* 柱状图 */
+:root[data-theme="omphalos"] .bar-fill {
+  background: linear-gradient(180deg, var(--om-gold), var(--om-gold-deep));
+  box-shadow: 0 2px 10px rgba(232,198,106,0.3);
+}
+
+/* 按钮：鎏金主按钮 + 紫黑描边 ghost */
+:root[data-theme="omphalos"] .empty-start-btn,
+:root[data-theme="omphalos"] .graph-empty-btn,
+:root[data-theme="omphalos"] .new-chat-btn,
+:root[data-theme="omphalos"] .plan-save,
+:root[data-theme="omphalos"] .focus-btn.primary,
+:root[data-theme="omphalos"] .tool-btn.primary,
+:root[data-theme="omphalos"] .quota-btn.primary,
+:root[data-theme="omphalos"] .ai-send-btn,
+:root[data-theme="omphalos"] .new-note-btn {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(232,198,106,0.35) !important;
+}
+:root[data-theme="omphalos"] .empty-start-btn:hover,
+:root[data-theme="omphalos"] .graph-empty-btn:hover,
+:root[data-theme="omphalos"] .plan-save:hover,
+:root[data-theme="omphalos"] .focus-btn.primary:hover,
+:root[data-theme="omphalos"] .tool-btn.primary:hover,
+:root[data-theme="omphalos"] .ai-send-btn:hover {
+  box-shadow: 0 6px 20px rgba(232,198,106,0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* Ghost 按钮（透明底） */
+:root[data-theme="omphalos"] .focus-btn.ghost,
+:root[data-theme="omphalos"] .tool-btn:not(.primary),
+:root[data-theme="omphalos"] .header-btn,
+:root[data-theme="omphalos"] .new-note-btn.plain {
+  background: rgba(10,4,24,0.55);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+  border-radius: 999px;
+}
+:root[data-theme="omphalos"] .focus-btn.ghost:hover,
+:root[data-theme="omphalos"] .tool-btn:not(.primary):hover,
+:root[data-theme="omphalos"] .header-btn:hover {
+  background: rgba(232,198,106,0.10);
+  border-color: var(--om-gold);
+  box-shadow: 0 0 8px rgba(232,198,106,0.2);
+}
+
+/* 链接按钮 */
+:root[data-theme="omphalos"] .link-btn {
+  color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .link-btn:hover {
+  background: rgba(232,198,106,0.12);
+}
+
+/* 输入框（所有） */
+:root[data-theme="omphalos"] .plan-input,
+:root[data-theme="omphalos"] .ai-input-field,
+:root[data-theme="omphalos"] .search-input,
+:root[data-theme="omphalos"] .rename-input,
+:root[data-theme="omphalos"] .filter-select,
+:root[data-theme="omphalos"] .search-box {
+  background: rgba(10,4,24,0.65) !important;
+  border: 1.5px solid rgba(232,198,106,0.28) !important;
+  border-radius: 999px !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .plan-input:focus,
+:root[data-theme="omphalos"] .ai-input-field:focus,
+:root[data-theme="omphalos"] .search-input:focus,
+:root[data-theme="omphalos"] .filter-select:focus {
+  border-color: var(--om-gold) !important;
+  box-shadow: 0 0 0 3px rgba(232,198,106,0.18) !important;
+}
+:root[data-theme="omphalos"] .plan-input::placeholder,
+:root[data-theme="omphalos"] .ai-input-field::placeholder,
+:root[data-theme="omphalos"] .search-input::placeholder {
+  color: var(--om-text-mute) !important;
+}
+
+/* 筛选 tab */
+:root[data-theme="omphalos"] .filter-tab {
+  background: rgba(10,4,24,0.4);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-sec);
+}
+:root[data-theme="omphalos"] .filter-tab:hover {
+  border-color: var(--om-gold);
+  color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .filter-tab.active {
+  background: rgba(232,198,106,0.14);
+  border-color: var(--om-gold);
+  color: var(--om-gold);
+}
+
+/* AI 头像（大中小） */
+:root[data-theme="omphalos"] .ai-avatar,
+:root[data-theme="omphalos"] .ai-avatar-lg,
+:root[data-theme="omphalos"] .ai-msg-avatar {
+  background: linear-gradient(135deg, var(--om-gold) 0%, var(--om-gold-deep) 100%);
+  box-shadow: 0 3px 12px rgba(232,198,106,0.4);
+}
+:root[data-theme="omphalos"] .ai-avatar span,
+:root[data-theme="omphalos"] .ai-avatar-lg span,
+:root[data-theme="omphalos"] .ai-msg-avatar span {
+  color: #1A0F35 !important;
+}
+
+/* API warn / summary / action / chat 等右侧面板块 */
+:root[data-theme="omphalos"] .api-warn-card {
+  background: rgba(232,96,79,0.10);
+  border: 1px solid rgba(232,96,79,0.35);
+}
+:root[data-theme="omphalos"] .api-warn-text { color: #FFB8B0; }
+:root[data-theme="omphalos"] .summary-card {
+  background: linear-gradient(135deg, rgba(232,198,106,0.14), rgba(139,95,196,0.14));
+  border: 1px solid rgba(232,198,106,0.3);
+}
+:root[data-theme="omphalos"] .summary-label { color: var(--om-gold); }
+:root[data-theme="omphalos"] .summary-text { color: var(--om-text-pri); }
+
+:root[data-theme="omphalos"] .action-item,
+:root[data-theme="omphalos"] .chat-item,
+:root[data-theme="omphalos"] .history-item {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.18);
+  color: var(--om-text-pri);
+  border-radius: 12px;
+}
+:root[data-theme="omphalos"] .action-item:hover,
+:root[data-theme="omphalos"] .chat-item:hover,
+:root[data-theme="omphalos"] .history-item:hover {
+  background: rgba(232,198,106,0.08);
+  border-color: rgba(232,198,106,0.4);
+}
+:root[data-theme="omphalos"] .history-item.active {
+  background: rgba(232,198,106,0.16);
+  border-color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .action-icon {
+  background: rgba(232,198,106,0.18);
+}
+:root[data-theme="omphalos"] .action-label,
+:root[data-theme="omphalos"] .chat-q,
+:root[data-theme="omphalos"] .history-item-title {
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .chat-label,
+:root[data-theme="omphalos"] .history-item-meta,
+:root[data-theme="omphalos"] .empty-hint-sm {
+  color: var(--om-text-mute);
+}
+
+/* 用户聊天气泡 */
+:root[data-theme="omphalos"] .user-bubble {
+  background: linear-gradient(135deg, #E8C66A 0%, #8B5A2B 100%);
+  color: #1A0F35;
+  box-shadow: 0 4px 14px rgba(232,198,106,0.35);
+}
+
+/* 专注计时器数字 */
+:root[data-theme="omphalos"] .focus-time {
+  background: linear-gradient(135deg, var(--om-gold) 0%, var(--om-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 复习项 */
+:root[data-theme="omphalos"] .review-item {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.2);
+  color: var(--om-text-pri);
+  border-radius: 10px;
+}
+:root[data-theme="omphalos"] .review-item:hover {
+  background: rgba(232,198,106,0.08);
+  border-color: rgba(232,198,106,0.4);
+  transform: translateX(2px);
+}
+:root[data-theme="omphalos"] .review-days {
+  color: var(--om-gold);
+  font-weight: 700;
+}
+:root[data-theme="omphalos"] .review-empty {
+  color: var(--om-text-mute);
+}
+
+/* 知识图谱：节点 */
+:root[data-theme="omphalos"] .graph-node {
+  background: rgba(10,4,24,0.6);
+  border: 1px solid rgba(232,198,106,0.28);
+  border-radius: 12px;
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .graph-node:hover {
+  box-shadow: 0 4px 16px rgba(232,198,106,0.3);
+}
+:root[data-theme="omphalos"] .graph-node.selected {
+  box-shadow: 0 4px 20px rgba(232,198,106,0.4);
+  border-color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .graph-node.highlighted {
+  box-shadow: 0 0 0 3px rgba(232,198,106,0.45), 0 4px 16px rgba(232,198,106,0.3);
+}
+:root[data-theme="omphalos"] .graph-canvas {
+  background: rgba(10,4,24,0.45) !important;
+  border: 1px solid rgba(232,198,106,0.28) !important;
+}
+:root[data-theme="omphalos"] .canvas-hint {
+  background: rgba(10,4,24,0.7);
+  color: var(--om-text-mute);
+  border: 1px solid rgba(232,198,106,0.25);
+}
+
+/* 回收站 */
+:root[data-theme="omphalos"] .recycle-item {
+  background: rgba(10,4,24,0.55);
+  border: 1px dashed rgba(232,198,106,0.3);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .recycle-title { color: var(--om-text-sec); }
+:root[data-theme="omphalos"] .recycle-date { color: var(--om-text-mute); }
+:root[data-theme="omphalos"] .recycle-btn.restore {
+  color: #A8D8FF; border-color: rgba(168,216,255,0.4);
+  background: rgba(168,216,255,0.08);
+}
+:root[data-theme="omphalos"] .recycle-btn.purge {
+  color: #FFB8B0; border-color: rgba(232,96,79,0.4);
+  background: rgba(232,96,79,0.08);
+}
+
+/* 空状态 */
+:root[data-theme="omphalos"] .empty-title,
+:root[data-theme="omphalos"] .graph-empty-title {
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .empty-desc,
+:root[data-theme="omphalos"] .graph-empty-desc,
+:root[data-theme="omphalos"] .history-empty {
+  color: var(--om-text-mute);
+}
+
+/* ========== 翁法罗斯 · AI 助手页补充覆盖 ========== */
+:root[data-theme="omphalos"] .ai-mode-switch,
+:root[data-theme="omphalos"] .ai-mode-btn {
+  background: rgba(10,4,24,0.55);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .ai-mode-btn.active {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%);
+  color: #1A0F35;
+  border-color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .ai-mode-btn:hover {
+  border-color: var(--om-gold);
+  color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .ai-mode-btn.active:hover {
+  color: #1A0F35;
+}
+
+:root[data-theme="omphalos"] .web-toggle {
+  background: rgba(10,4,24,0.55);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .web-toggle .wt-label { color: inherit; }
+
+:root[data-theme="omphalos"] .welcome-screen { background: transparent; }
+:root[data-theme="omphalos"] .welcome-icon { color: var(--om-gold); }
+:root[data-theme="omphalos"] .welcome-title { color: var(--om-text-pri); }
+:root[data-theme="omphalos"] .welcome-desc { color: var(--om-text-sec); }
+
+:root[data-theme="omphalos"] .suggestion-card {
+  background: linear-gradient(135deg, rgba(232,198,106,0.12), rgba(139,95,196,0.12)) !important;
+  border: 1px solid rgba(232,198,106,0.3) !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .suggestion-card.pink,
+:root[data-theme="omphalos"] .suggestion-card.purple,
+:root[data-theme="omphalos"] .suggestion-card.blue { background: linear-gradient(135deg, rgba(232,198,106,0.12), rgba(139,95,196,0.12)) !important; }
+:root[data-theme="omphalos"] .suggestion-card:hover {
+  border-color: var(--om-gold) !important;
+  background: linear-gradient(135deg, rgba(232,198,106,0.18), rgba(139,95,196,0.18)) !important;
+  box-shadow: 0 4px 16px rgba(232,198,106,0.2) !important;
+  transform: translateY(-2px);
+}
+:root[data-theme="omphalos"] .suggestion-text { color: var(--om-text-pri) !important; }
+
+:root[data-theme="omphalos"] .input-box,
+:root[data-theme="omphalos"] .input-area,
+:root[data-theme="omphalos"] .input-row {
+  background: transparent;
+}
+:root[data-theme="omphalos"] .chat-input,
+:root[data-theme="omphalos"] .ai-input-wrap,
+:root[data-theme="omphalos"] .input-wrap {
+  background: rgba(10,4,24,0.65);
+  border: 1.5px solid rgba(232,198,106,0.3) !important;
+  border-radius: 16px !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .chat-input:focus,
+:root[data-theme="omphalos"] .ai-input-wrap:focus-within,
+:root[data-theme="omphalos"] .input-wrap:focus-within {
+  border-color: var(--om-gold) !important;
+  box-shadow: 0 0 0 3px rgba(232,198,106,0.18) !important;
+}
+:root[data-theme="omphalos"] .chat-input::placeholder { color: var(--om-text-mute) !important; }
+:root[data-theme="omphalos"] .send-btn {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+}
+:root[data-theme="omphalos"] .input-footer { color: var(--om-text-mute); }
+:root[data-theme="omphalos"] .input-error { color: #FFB8B0; }
+
+:root[data-theme="omphalos"] .ai-bubble {
+  background: rgba(10,4,24,0.72);
+  border: 1px solid rgba(232,198,106,0.3);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .ai-bubble.thinking {
+  background: rgba(10,4,24,0.5);
+  border: 1px dashed rgba(232,198,106,0.3);
+}
+:root[data-theme="omphalos"] .ai-msg-name { color: var(--om-gold); }
+:root[data-theme="omphalos"] .ai-action-btn {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-sec);
+}
+:root[data-theme="omphalos"] .ai-action-btn:hover {
+  border-color: var(--om-gold);
+  color: var(--om-gold);
+}
+:root[data-theme="omphalos"] .ai-action-btn.search { color: var(--om-gold); }
+
+:root[data-theme="omphalos"] .ai-web-sources {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.2);
+}
+:root[data-theme="omphalos"] .aws-toggle { color: var(--om-gold); }
+:root[data-theme="omphalos"] .aws-item {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.2);
+}
+:root[data-theme="omphalos"] .aws-title { color: var(--om-text-pri); }
+:root[data-theme="omphalos"] .aws-snippet { color: var(--om-text-sec); }
+
+:root[data-theme="omphalos"] .ai-web-images {
+  background: rgba(10,4,24,0.5);
+  border: 1px solid rgba(232,198,106,0.2);
+}
+:root[data-theme="omphalos"] .awi-label { color: var(--om-gold); }
+:root[data-theme="omphalos"] .awi-item {
+  background: rgba(10,4,24,0.6);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .awi-gen,
+:root[data-theme="omphalos"] .ai-gen-btn {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+}
+:root[data-theme="omphalos"] .awi-loading { color: var(--om-gold); }
+
+/* 右侧"本次检索来源"面板（翁法罗斯必杀） */
+:root[data-theme="omphalos"] .context-panel {
+  background: rgba(10,4,24,0.7);
+  border-left: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .context-header {
+  border-bottom: 1px solid rgba(232,198,106,0.2);
+}
+:root[data-theme="omphalos"] .context-title { color: var(--om-gold); }
+:root[data-theme="omphalos"] .context-sub { color: var(--om-text-mute); }
+:root[data-theme="omphalos"] .context-note-card {
+  background: linear-gradient(180deg, rgba(10,4,24,0.6), rgba(26,15,53,0.45));
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .context-note-card:hover {
+  border-color: var(--om-gold);
+  box-shadow: 0 0 12px rgba(232,198,106,0.18);
+}
+:root[data-theme="omphalos"] .cn-tag { color: var(--om-gold) !important; }
+:root[data-theme="omphalos"] .cn-title { color: var(--om-text-pri); }
+:root[data-theme="omphalos"] .cn-meta { color: var(--om-text-mute); }
+:root[data-theme="omphalos"] .context-empty {
+  color: var(--om-text-mute);
+  background: transparent;
+}
+:root[data-theme="omphalos"] .context-empty-hint { color: var(--om-text-mute); }
+
+:root[data-theme="omphalos"] .web-searching-hint { color: var(--om-gold); }
+:root[data-theme="omphalos"] .cursor-blink { color: var(--om-gold); }
+
+/* ========== 翁法罗斯 · 知识图谱页补充 ========== */
+:root[data-theme="omphalos"] .graph-detail,
+:root[data-theme="omphalos"] .graph-detail-panel,
+:root[data-theme="omphalos"] .detail-panel {
+  background: rgba(10,4,24,0.7) !important;
+  border-left: 1px solid rgba(232,198,106,0.25) !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .graph-detail-title,
+:root[data-theme="omphalos"] .detail-title { color: var(--om-gold) !important; }
+:root[data-theme="omphalos"] .graph-detail-content,
+:root[data-theme="omphalos"] .detail-content { color: var(--om-text-sec); }
+:root[data-theme="omphalos"] .detail-empty { color: var(--om-text-mute); }
+
+:root[data-theme="omphalos"] .toolbar-left { min-width: 0; flex: 0 1 auto; }
+:root[data-theme="omphalos"] .toolbar-left .toolbar-title {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+:root[data-theme="omphalos"] .toolbar-left .toolbar-sub {
+  white-space: nowrap;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root[data-theme="omphalos"] .toolbar-right { flex-shrink: 0; }
+:root[data-theme="omphalos"] .canvas-toolbar { gap: 12px; }
+
+/* ========== 翁法罗斯 · 复习页补充 ========== */
+:root[data-theme="omphalos"] .record-panel,
+:root[data-theme="omphalos"] .left-panel,
+:root[data-theme="omphalos"] .session-panel,
+:root[data-theme="omphalos"] .review-session {
+  background: rgba(10,4,24,0.6);
+  border: 1px solid rgba(232,198,106,0.25);
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .refresh-btn,
+:root[data-theme="omphalos"] .session-btn {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+}
+:root[data-theme="omphalos"] .session-title { color: var(--om-gold) !important; }
+:root[data-theme="omphalos"] .session-empty-hint { color: var(--om-text-mute); }
+
+/* ========== 翁法罗斯 · 笔记整理页右侧 tab + 按钮 ========== */
+:root[data-theme="omphalos"] .note-page .glow-orb.glow-pink,
+:root[data-theme="omphalos"] .note-page .glow-orb.glow-purple,
+:root[data-theme="omphalos"] .note-page .glow-orb.glow-blue,
+:root[data-theme="omphalos"] .ai-page .glow-orb.glow-pink,
+:root[data-theme="omphalos"] .ai-page .glow-orb.glow-purple,
+:root[data-theme="omphalos"] .ai-page .glow-orb.glow-blue,
+:root[data-theme="omphalos"] .graph-page .glow-orb.glow-pink,
+:root[data-theme="omphalos"] .graph-page .glow-orb.glow-purple,
+:root[data-theme="omphalos"] .graph-page .glow-orb.glow-blue,
+:root[data-theme="omphalos"] .dashboard .glow-orb.glow-pink,
+:root[data-theme="omphalos"] .dashboard .glow-orb.glow-purple,
+:root[data-theme="omphalos"] .dashboard .glow-orb.glow-blue,
+:root[data-theme="omphalos"] .review-page .glow-orb.glow-pink,
+:root[data-theme="omphalos"] .review-page .glow-orb.glow-purple,
+:root[data-theme="omphalos"] .review-page .glow-orb.glow-blue {
+  background: radial-gradient(circle, rgba(232, 198, 106, 0.18) 0%, rgba(232, 198, 106, 0) 70%) !important;
+  filter: blur(16px) !important;   /* ⚠️ 40px→16px：40px blur 在低配机是重大 GPU 开销，卡顿主因之一 */
+  opacity: 0.5 !important;
+}
+
+:root[data-theme="omphalos"] .empty-state,
+:root[data-theme="omphalos"] .no-selection {
+  background: transparent !important;
+}
+:root[data-theme="omphalos"] .no-sel-title { color: var(--om-text-pri) !important; }
+:root[data-theme="omphalos"] .no-sel-desc { color: var(--om-text-sec) !important; }
+:root[data-theme="omphalos"] .no-sel-icon { color: var(--om-gold) !important; }
+
+:root[data-theme="omphalos"] .new-note-btn.primary,
+:root[data-theme="omphalos"] .no-sel-btn.primary {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(232,198,106,0.35) !important;
+}
+:root[data-theme="omphalos"] .new-note-btn.primary:hover,
+:root[data-theme="omphalos"] .no-sel-btn.primary:hover { box-shadow: 0 6px 20px rgba(232,198,106,0.5) !important; }
+:root[data-theme="omphalos"] .new-note-btn.plain {
+  background: rgba(10,4,24,0.55) !important;
+  border: 1px solid rgba(232,198,106,0.3) !important;
+  color: var(--om-text-pri) !important;
+  border-radius: 999px !important;
+}
+:root[data-theme="omphalos"] .new-note-btn.plain:hover {
+  border-color: var(--om-gold) !important;
+  color: var(--om-gold) !important;
+}
+:root[data-theme="omphalos"] .note-tabs,
+:root[data-theme="omphalos"] .right-tabs,
+:root[data-theme="omphalos"] .analysis-tabs {
+  background: transparent;
+}
+:root[data-theme="omphalos"] .note-tab,
+:root[data-theme="omphalos"] .right-tab,
+:root[data-theme="omphalos"] .tab-btn,
+:root[data-theme="omphalos"] .right-tab-btn,
+:root[data-theme="omphalos"] .outline-tab,
+:root[data-theme="omphalos"] .analysis-tab,
+:root[data-theme="omphalos"] .extension-tab {
+  background: rgba(10,4,24,0.5) !important;
+  border: 1px solid rgba(232,198,106,0.25) !important;
+  color: var(--om-text-sec) !important;
+  border-radius: 999px !important;
+}
+:root[data-theme="omphalos"] .note-tab.active,
+:root[data-theme="omphalos"] .note-tab:hover,
+:root[data-theme="omphalos"] .right-tab.active,
+:root[data-theme="omphalos"] .right-tab:hover,
+:root[data-theme="omphalos"] .tab-btn.active,
+:root[data-theme="omphalos"] .tab-btn:hover,
+:root[data-theme="omphalos"] .right-tab-btn.active,
+:root[data-theme="omphalos"] .right-tab-btn:hover,
+:root[data-theme="omphalos"] .outline-tab.active,
+:root[data-theme="omphalos"] .outline-tab:hover,
+:root[data-theme="omphalos"] .analysis-tab.active,
+:root[data-theme="omphalos"] .analysis-tab:hover,
+:root[data-theme="omphalos"] .extension-tab.active,
+:root[data-theme="omphalos"] .extension-tab:hover {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  border-color: var(--om-gold) !important;
+  color: #1A0F35 !important;
+}
+
+/* 笔记页右侧内容面板 */
+:root[data-theme="omphalos"] .right-content,
+:root[data-theme="omphalos"] .analysis-panel,
+:root[data-theme="omphalos"] .outline-panel,
+:root[data-theme="omphalos"] .note-detail-panel,
+:root[data-theme="omphalos"] .note-right,
+:root[data-theme="omphalos"] .empty-content {
+  background: rgba(10,4,24,0.55) !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .empty-content h3,
+:root[data-theme="omphalos"] .empty-content p,
+:root[data-theme="omphalos"] .right-content h3 { color: var(--om-text-pri) !important; }
+:root[data-theme="omphalos"] .right-content p,
+:root[data-theme="omphalos"] .right-content .muted,
+:root[data-theme="omphalos"] .outline-empty { color: var(--om-text-sec) !important; }
+:root[data-theme="omphalos"] .right-content .ghost-btn,
+:root[data-theme="omphalos"] .right-content .secondary-btn {
+  background: rgba(10,4,24,0.5) !important;
+  border: 1px solid rgba(232,198,106,0.3) !important;
+  color: var(--om-text-pri) !important;
+  border-radius: 999px !important;
+}
+:root[data-theme="omphalos"] .right-content .ghost-btn:hover,
+:root[data-theme="omphalos"] .right-content .secondary-btn:hover {
+  border-color: var(--om-gold) !important;
+  color: var(--om-gold) !important;
+}
+
+/* 笔记页右侧空状态按钮（empty-btn / no-sel-btn） */
+:root[data-theme="omphalos"] .empty-btn {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(232,198,106,0.35) !important;
+}
+:root[data-theme="omphalos"] .empty-btn:hover { box-shadow: 0 6px 20px rgba(232,198,106,0.5) !important; }
+:root[data-theme="omphalos"] .empty-btn-text { color: inherit !important; }
+:root[data-theme="omphalos"] .no-sel-btn:not(.primary) {
+  background: rgba(10,4,24,0.5) !important;
+  border: 1px solid rgba(232,198,106,0.3) !important;
+  color: var(--om-text-pri) !important;
+  border-radius: 999px !important;
+}
+:root[data-theme="omphalos"] .no-sel-btn:not(.primary):hover {
+  border-color: var(--om-gold) !important;
+  color: var(--om-gold) !important;
+}
+
+/* 笔记编辑器主面板 */
+:root[data-theme="omphalos"] .editor-panel {
+  background: linear-gradient(180deg, rgba(10,4,24,0.7), rgba(26,15,53,0.5)) !important;
+  border: 1px solid rgba(232,198,106,0.25) !important;
+  color: var(--om-text-pri) !important;
+}
+:root[data-theme="omphalos"] .editor-header,
+:root[data-theme="omphalos"] .editor-title-input,
+:root[data-theme="omphalos"] .editor-toolbar,
+:root[data-theme="omphalos"] .editor-body,
+:root[data-theme="omphalos"] .markdown-body,
+:root[data-theme="omphalos"] .tts-bar {
+  background: transparent !important;
+  color: var(--om-text-pri) !important;
+  border-color: rgba(232,198,106,0.25) !important;
+}
+:root[data-theme="omphalos"] .editor-btn {
+  background: rgba(10,4,24,0.5) !important;
+  border: 1px solid rgba(232,198,106,0.2) !important;
+  color: var(--om-text-sec) !important;
+  border-radius: 8px !important;
+}
+:root[data-theme="omphalos"] .editor-btn:hover,
+:root[data-theme="omphalos"] .editor-btn.active {
+  background: rgba(232,198,106,0.12) !important;
+  border-color: var(--om-gold) !important;
+  color: var(--om-gold) !important;
+}
+:root[data-theme="omphalos"] .editor-btn.primary,
+:root[data-theme="omphalos"] .editor-btn.save {
+  background: linear-gradient(135deg, #F5D472 0%, #C49A45 100%) !important;
+  color: #1A0F35 !important;
+  border: none !important;
+}
+:root[data-theme="omphalos"] .editor-mode-switch {
+  background: rgba(10,4,24,0.55);
+  border: 1px solid rgba(232,198,106,0.25);
+}
+:root[data-theme="omphalos"] .markdown-body h1,
+:root[data-theme="omphalos"] .markdown-body h2,
+:root[data-theme="omphalos"] .markdown-body h3 { color: var(--om-gold); }
+:root[data-theme="omphalos"] .markdown-body a { color: var(--om-gold); }
+:root[data-theme="omphalos"] .markdown-body code { background: rgba(10,4,24,0.6); color: var(--om-gold); }
+:root[data-theme="omphalos"] .markdown-body blockquote { border-left: 3px solid var(--om-gold); color: var(--om-text-sec); }
+:root[data-theme="omphalos"] .unsaved { color: var(--om-gold); }
+
+/* 顶栏：紫黑实底 + 鎏金描边 + 圆角胶囊 */
+:root[data-theme="omphalos"] .top-bar {
+  background: linear-gradient(90deg, rgba(10,4,24,0.95) 0%, rgba(26,15,53,0.95) 100%);
+  border-bottom: 1px solid rgba(232,198,106,0.25);
+}
+:root[data-theme="omphalos"] .search-wrap {
+  background: rgba(10,4,24,0.6);
+  border: 1.5px solid rgba(232,198,106,0.25);
+  border-radius: 999px;
+  transition: all .2s;
+}
+:root[data-theme="omphalos"] .search-wrap:focus-within {
+  border-color: var(--om-gold);
+  box-shadow: 0 0 0 3px rgba(232,198,106,0.18);
+}
+:root[data-theme="omphalos"] .search-input { color: var(--om-text-pri); background: transparent; }
+:root[data-theme="omphalos"] .search-input::placeholder { color: var(--om-text-mute); }
+:root[data-theme="omphalos"] .search-icon circle,
+:root[data-theme="omphalos"] .search-icon path { stroke: var(--om-text-mute); }
+
+/* 顶栏按钮：鎏金描边胶囊 + 圆角 */
+:root[data-theme="omphalos"] .icon-btn {
+  background: rgba(10,4,24,0.55);
+  border: 1px solid rgba(232,198,106,0.25);
+  border-radius: 999px;
+  color: var(--om-text-pri);
+}
+:root[data-theme="omphalos"] .icon-btn:hover {
+  background: rgba(232,198,106,0.10);
+  border-color: var(--om-gold);
+  box-shadow: 0 0 8px rgba(232,198,106,0.25);
+  transform: translateY(-1px);
+}
+
+/* ================================================================
+   ✅ 按钮尺寸设计系统（三档统一，避免各页面按钮 20/24/26/28/30/34/36 随意写）
+   用法：
+     <button class="btn btn-md btn-primary"> 保存 </button>
+     <button class="btn btn-sm btn-ghost"> 取消 </button>
+     <button class="btn btn-lg btn-primary"> 去登录 </button>
+   新代码统一用这套；遗留样式里如果 height/padding 和下面冲突，
+   以规范为准（我在 NoteOrganize 里已经修了）。
+   ================================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  line-height: 1;
+  transition: background var(--dur-fast), border-color var(--dur-fast),
+              box-shadow var(--dur-fast), transform var(--dur-fast), opacity var(--dur-fast);
+  /* 禁用 GPU 下确保按钮边界对齐整像素（SW 栅化不抗走样会糊边缘） */
+  transform: translateZ(0);
+}
+.btn:focus-visible { box-shadow: var(--shadow-focus-ring); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+.btn-sm { height: 26px; padding: 0 10px; font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+.btn-md { height: 32px; padding: 0 14px; font-size: var(--fs-md); font-weight: var(--fw-semibold); }
+.btn-lg { height: 40px; padding: 0 20px; font-size: var(--fs-base); font-weight: var(--fw-semibold); }
+
+/* 语义色变体 */
+.btn-primary {
+  background: var(--gradient-pink-purple);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 3px 10px rgba(255,107,157,0.25);
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+.btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+
+.btn-ghost {
+  background: color-mix(in srgb, var(--color-bg-card) 80%, var(--color-pink-light) 20%);
+  color: var(--color-pink);
+  border-color: color-mix(in srgb, var(--color-pink) 35%, transparent);
+}
+.btn-ghost:hover:not(:disabled) { background: var(--color-pink-light); }
+.btn-ghost:active:not(:disabled) { transform: scale(0.97); }
+
+.btn-ghost-purple {
+  background: color-mix(in srgb, var(--color-bg-card) 80%, var(--color-purple-light) 20%);
+  color: #7A5AF8;
+  border-color: color-mix(in srgb, var(--color-purple) 40%, transparent);
+}
+.btn-ghost-purple:hover:not(:disabled) { background: var(--color-purple-light); }
+
+.btn-ghost-blue {
+  background: color-mix(in srgb, var(--color-bg-card) 88%, var(--color-blue-light) 12%);
+  color: var(--color-info);
+  border-color: color-mix(in srgb, var(--color-blue) 38%, transparent);
+}
+.btn-ghost-blue:hover:not(:disabled) { background: var(--color-blue-light); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-card) 90%);
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.btn-chip {
+  height: 26px; padding: 0 12px; font-size: var(--fs-sm);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: var(--fw-medium);
+}
+.btn-chip:hover:not(:disabled) {
+  border-color: var(--color-pink);
+  color: var(--color-pink);
+  background: var(--color-pink-light-2);
+}
+.btn-chip.active {
+  background: var(--color-pink-light);
+  border-color: var(--color-pink);
+  color: var(--color-pink);
+  font-weight: var(--fw-semibold);
+}
+
+/* 遗留 anm-btn 兼容：如果某个页面还在用 anime-btn/anime-btn-ghost 保持原样不覆盖，
+   仅补一句"整像素对齐"避免边缘糊 */
+.anime-btn, .anime-btn-ghost,
+.new-note-btn, .empty-btn, .editor-btn, .course-delete-btn,
+.settings-btn, .icon-btn, .tool-btn, .nav-btn, .action-btn,
+.quota-btn, .focus-btn, .link-btn, .ai-send-btn, .new-chat-btn,
+.ai-mode-btn, .header-btn, .ai-action-btn, .refresh-btn, .level-btn,
+.filter-btn, .zoom-btn, .graph-empty-btn, .seg-btn, .provider-btn,
+.er-btn, .launch-btn, .submit-pill, .fb-enter-from,
+.batch-btn, .filter-tab, .recycle-btn, .no-sel-btn,
+.mode-tab, .outline-tab, .capture-btn, .capture-arrow,
+.font-size-btn, .add-course-btn, .tts-btn, .tts-rate-btn,
+.import-file-btn, .audio-file-btn, .queue-clear-btn,
+.modal-btn, .recycle-btn.restore, .recycle-btn.purge {
+  transform: translateZ(0); /* 软提示浏览器对齐整像素，SW 下减少子像素发虚 */
 }

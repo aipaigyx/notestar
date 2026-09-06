@@ -10,8 +10,11 @@ import NoteOrganize from './views/NoteOrganize.vue'
 import KnowledgeGraph from './views/KnowledgeGraph.vue'
 import AIAssistant from './views/AIAssistant.vue'
 import Settings from './views/Settings.vue'
+import About from './views/About.vue'
 import LogViewer from './views/LogViewer.vue'
 import QuizReview from './views/QuizReview.vue'
+import ReviewView from './views/ReviewView.vue'
+import TitanErosion from './views/TitanErosion.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -22,7 +25,11 @@ const router = createRouter({
     { path: '/graph', component: KnowledgeGraph },
     { path: '/assistant', component: AIAssistant },
     { path: '/quiz', component: QuizReview },
+    { path: '/review', component: ReviewView },
+    { path: '/heirs', component: TitanErosion },
+    { path: '/titans', redirect: '/heirs' },
     { path: '/settings', component: Settings },
+    { path: '/about', component: About },
     { path: '/logs', component: LogViewer },
   ]
 })

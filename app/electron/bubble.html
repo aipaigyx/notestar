@@ -4,204 +4,509 @@
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:;">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: #14101F; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  /* ============================================================
+     悬浮球·全新设计 v3
+     - 形态：圆角矩形 100×100 收起 / 球+面板 392×340 展开
+     - 配色：翁法罗斯紫金鎏金
+     - 动画：呼吸（轻）+ 面板浮入
+     - 行为：球+面板共存于同一窗口，由 CSS transform 控制显隐
+     ============================================================ */
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    user-select: none; -webkit-user-select: none;
+    background: transparent;
+    border: none; outline: none;
+    -webkit-app-region: no-drag;
+  }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: transparent !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #E9E4F5;
+  }
 
-  /* ===== 收起态：只显示球 ===== */
-  #shell { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  :root {
+    /* 翁法罗斯：紫金鎏金 */
+    --gold: #E8C66A;
+    --gold-l: #F5E4A8;
+    --gold-d: #C49A45;
+    --purple: #8B5FC4;
+    --purple-d: #5E2B91;
+    --purple-l: #B794F6;
+    --bg-card: rgba(20, 12, 48, 0.92);
+    --bg-card-l: rgba(28, 18, 60, 0.96);
+    --text-0: #F5E9FF;
+    --text-1: #C9B8E8;
+    --text-2: #8B7DAB;
+    --radius: 28px;
+    --ball-size: 100px;   /* 与 main.cjs BUBBLE_BALL_SIZE 一致 */
+    --ball-margin: 12px;  /* 与 main.cjs BUBBLE_MARGIN 一致 */
+  }
+
+  /* ====== 整体根：球+面板共存 ====== */
+  #root {
+    position: fixed; inset: 0;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    padding: 0;
+    background: transparent !important;
+  }
+
+  /* ====== 球（始终在右下角） ====== */
   #ball {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #FFB8CF 0%, #FF6B9D 45%, #B794F6 100%);
-    box-shadow: 0 4px 16px rgba(255, 107, 157, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+    position: absolute;
+    right: var(--ball-margin); bottom: var(--ball-margin);
+    width: var(--ball-size); height: var(--ball-size);
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: grab;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* 弃用 CSS app-region drag：与 click 冲突且部分环境失效 → JS 手动拖动（bubble.html mousedown/mousemove） */
+    -webkit-app-region: no-drag;
+    z-index: 10;
+    touch-action: none;
+    box-shadow:
+      0 0 0 1.5px rgba(232, 198, 106, 0.9),    /* 金色描边 */
+      0 0 0 3.5px rgba(139, 95, 196, 0.25),     /* 紫色光晕 */
+      0 4px 14px rgba(0, 0, 0, 0.45),           /* 落影 */
+      0 0 18px rgba(232, 198, 106, 0.18);       /* 金色 ambient */
+    animation: ball-breathe 3.5s ease-in-out infinite;
+    transition: transform 220ms cubic-bezier(.34,1.56,.64,1), box-shadow 280ms ease;
+    overflow: hidden;
   }
-  #ball:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(255, 107, 157, 0.65), inset 0 0 0 2px rgba(255,255,255,0.45); }
-  #ball .face { font-size: 22px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
-  #ball.recording { animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { box-shadow: 0 4px 16px rgba(255,107,157,0.5), 0 0 0 0 rgba(255,107,157,0.5); } 50% { box-shadow: 0 4px 16px rgba(255,107,157,0.5), 0 0 0 10px rgba(255,107,157,0); } }
+  #ball.dragging { cursor: grabbing; animation-play-state: paused; }
+  #ball.dragging:hover { transform: none; }
+  /* 球内图片 */
+  #ball img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius);
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+  /* 球上装饰：左上高光 + 右下紫色微光 */
+  #ball::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: var(--radius);
+    background:
+      radial-gradient(circle at 25% 20%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 35%),
+      radial-gradient(circle at 80% 85%, rgba(139, 95, 196, 0.2) 0%, rgba(139, 95, 196, 0) 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  /* 悬停 */
+  #ball:hover {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 2px rgba(245, 228, 168, 1),
+      0 0 0 4px rgba(139, 95, 196, 0.4),
+      0 6px 18px rgba(0, 0, 0, 0.55),
+      0 0 24px rgba(232, 198, 106, 0.35);
+    animation-play-state: paused;
+  }
+  #ball:active { transform: scale(0.95); }
 
-  /* ===== 展开态：操作面板 ===== */
+  /* 呼吸动画 */
+  @keyframes ball-breathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.04); }
+  }
+  /* 录制中：球的金描边变成红色脉冲呼吸、背景染一层红光、暂停紫色 ambient */
+  #ball.recording {
+    box-shadow:
+      0 0 0 2px rgba(248, 113, 113, 0.95),         /* 红色描边 */
+      0 0 0 4px rgba(248, 113, 113, 0.35),         /* 红色光晕 */
+      0 4px 14px rgba(0, 0, 0, 0.5),
+      0 0 22px rgba(248, 80, 80, 0.4);             /* 红色 ambient */
+    animation: ball-rec-breathe 1.1s ease-in-out infinite;
+  }
+  #ball.recording::before {
+    background:
+      radial-gradient(circle at 25% 20%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 35%),
+      radial-gradient(circle at 80% 85%, rgba(248, 90, 90, 0.32) 0%, rgba(248, 90, 90, 0) 50%);
+  }
+  @keyframes ball-rec-breathe {
+    0%, 100% { transform: scale(1.00); }
+    50%      { transform: scale(1.08); }
+  }
+  /* 录制中角标（球右上角红点） */
+  #ball .rec-dot {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #F87171;
+    box-shadow: 0 0 0 2px rgba(20, 12, 48, 0.85), 0 0 10px 2px rgba(248,113,113,0.65);
+    z-index: 11;
+    display: none;
+    animation: rec-dot-pulse 1s ease-in-out infinite;
+  }
+  #ball.recording .rec-dot { display: block; }
+  @keyframes rec-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.55; transform: scale(1.18); }
+  }
+
+  /* ====== 面板（从球左侧滑出） ====== */
   #panel {
-    position: fixed; inset: 0; display: none; flex-direction: column;
-    background: linear-gradient(165deg, #2A2340 0%, #14101F 70%);
-    border-radius: 18px; padding: 16px 12px 10px;
+    position: absolute;
+    right: 120px;                    /* 球右缘 + 间距（12 + 100 + 8） */
+    bottom: 12px;
+    width: 252px;
+    max-height: 320px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgba(232, 198, 106, 0.5),       /* 鎏金描边 */
+      0 0 0 1.5px rgba(139, 95, 196, 0.18),      /* 紫色微光 */
+      0 8px 28px rgba(0, 0, 0, 0.55),
+      0 0 24px rgba(232, 198, 106, 0.12);
+    padding: 12px 10px;
+    display: flex; flex-direction: column; gap: 4px;
+    opacity: 0;
+    transform: translateX(8px) scale(0.96);
+    transform-origin: bottom right;
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 240ms cubic-bezier(.34,1.56,.64,1);
+    z-index: 5;
   }
-  #panel.open { display: flex; }
-  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 12px; }
-  .panel-title { font-size: 13px; font-weight: 800; color: #FFB8CF; letter-spacing: 0.5px; }
-  .panel-ball {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #FFB8CF 0%, #FF6B9D 45%, #B794F6 100%);
-    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px;
-    box-shadow: 0 2px 10px rgba(255,107,157,0.5);
+  #panel.open {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
   }
-  .panel-ball.recording { animation: pulse 1s ease-in-out infinite; }
-  .menu-item {
-    display: flex; align-items: center; gap: 11px; padding: 12px 12px; border-radius: 12px;
-    font-size: 13px; font-weight: 600; color: #E9E4F5; cursor: pointer; transition: background 0.15s; margin-bottom: 2px;
-  }
-  .menu-item:hover { background: rgba(255, 107, 157, 0.14); }
-  .menu-item .icon { font-size: 16px; }
-  .menu-item.sub { font-size: 11.5px; color: #8F8AB0; margin-top: 6px; justify-content: center; padding: 9px; }
-  .menu-item.sub:hover { background: rgba(255, 107, 157, 0.08); color: #FFB8CF; }
 
-  /* 状态条 */
-  #status {
-    position: fixed; left: 8px; top: 8px; width: 48px; height: 48px; border-radius: 50%;
-    background: rgba(33, 26, 77, 0.88); color: #fff; font-size: 9px; line-height: 1.3;
-    display: none; align-items: center; justify-content: center; text-align: center; z-index: 30;
+  /* 顶栏：标题 + 关闭 */
+  .p-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 8px 8px;
+    border-bottom: 1px solid rgba(232, 198, 106, 0.18);
+    margin-bottom: 6px;
+  }
+  .p-title {
+    font-size: 12.5px; font-weight: 700;
+    background: linear-gradient(120deg, var(--gold-l), var(--gold) 45%, var(--purple-l));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .p-sub {
+    font-size: 9.5px; color: var(--text-2);
+    letter-spacing: 1.2px;
+    margin-top: 1px;
+  }
+  .p-close {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    background: rgba(232, 198, 106, 0.1);
+    color: var(--gold);
+    transition: background 180ms ease;
+  }
+  .p-close:hover { background: rgba(232, 198, 106, 0.22); }
+  .p-close svg { width: 11px; height: 11px; }
+
+  /* 菜单项 */
+  .p-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text-0);
+    font-size: 12px; font-weight: 600;
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .p-item:hover {
+    background: rgba(232, 198, 106, 0.1);
+    transform: translateX(-2px);
+  }
+  .p-item:active { transform: scale(0.97); }
+  .p-item .ico {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, rgba(232,198,106,0.18), rgba(139,95,196,0.18));
+    color: var(--gold-l);
+    flex-shrink: 0;
+  }
+  .p-item .ico svg { width: 13px; height: 13px; }
+  .p-item .lbl { flex: 1; }
+  .p-item .kbd {
+    font-size: 9.5px; color: var(--text-2);
+    background: rgba(255,255,255,0.05);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .p-item.danger { color: #F8B4B4; }
+  .p-item.danger .ico { color: #F8B4B4; background: rgba(248,113,113,0.15); }
+  .p-item.recording { color: #F87171; }
+  .p-item.recording .ico { color: #F87171; background: rgba(248,113,113,0.2); }
+  @keyframes rec-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* 状态 Toast */
+  #toast {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 6px 12px;
+    background: var(--bg-card-l);
+    border: 1px solid rgba(232,198,106,0.4);
+    border-radius: 999px;
+    color: var(--text-0);
+    font-size: 11px; font-weight: 700;
+    display: none;
+    z-index: 30;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  #toast.show { display: block; animation: toast-in 200ms ease both; }
+  @keyframes toast-in {
+    0%   { opacity: 0; transform: translate(-50%, -54%); }
+    100% { opacity: 1; transform: translate(-50%, -50%); }
   }
 </style>
 </head>
 <body>
-  <!-- 收起态：球 -->
-  <div id="shell">
-    <div id="ball" title="笔记星图"><span class="face">🎀</span></div>
-  </div>
-
-  <!-- 展开态：操作面板 -->
-  <div id="panel">
-    <div class="panel-head">
-      <span class="panel-title">✦ 笔记星图</span>
-      <div id="panel-ball" class="panel-ball" title="收起">🎀</div>
+  <div id="root">
+    <!-- 球：始终可见 -->
+    <div id="ball" title="">
+      <img src="pet.png" alt="" draggable="false" />
+      <span class="rec-dot" aria-hidden="true"></span>
     </div>
-    <div class="menu-item" id="mi-voice"><span class="icon">🎤</span>语音转文字笔记</div>
-    <div class="menu-item" id="mi-shot"><span class="icon">📸</span>截图添加到笔记</div>
-    <div class="menu-item" id="mi-open"><span class="icon">📂</span>打开主界面</div>
-    <div class="menu-item sub" id="mi-quit">退出笔记星图</div>
-  </div>
 
-  <div id="status"></div>
+    <!-- 面板：从球左侧滑出 -->
+    <div id="panel">
+      <div class="p-head">
+        <div>
+          <div class="p-title">翁法罗斯</div>
+          <div class="p-sub">OMPHALOS · DESK PET</div>
+        </div>
+        <div class="p-close" id="p-close" title="收起">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="p-item" data-act="capture">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19V9a2 2 0 0 0-2-2h-3l-2-3H8L6 7H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2z"/>
+            <circle cx="12" cy="13" r="3.5"/>
+          </svg>
+        </div>
+        <div class="lbl">截图笔记</div>
+        <div class="kbd">Ctrl+Shift+S</div>
+      </div>
+
+      <div class="p-item" data-act="voice">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2.5" width="6" height="12" rx="3"/>
+            <path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18.5" x2="12" y2="22"/>
+          </svg>
+        </div>
+        <div class="lbl">语音转文字</div>
+        <div class="kbd">Ctrl+Shift+R</div>
+      </div>
+
+      <div class="p-item" data-act="rec" id="rec-item">
+        <div class="ico" id="rec-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="lbl" id="rec-lbl">录屏笔记</div>
+        <div class="kbd" id="rec-badge" style="display:none;"></div>
+      </div>
+
+      <div class="p-item" data-act="apps">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="7" height="7" rx="1.5"/>
+            <rect x="13" y="4" width="7" height="7" rx="1.5"/>
+            <rect x="4" y="13" width="7" height="7" rx="1.5"/>
+            <rect x="13" y="13" width="7" height="7" rx="1.5"/>
+          </svg>
+        </div>
+        <div class="lbl">打开主界面</div>
+        <div class="kbd"></div>
+      </div>
+
+      <div class="p-item danger" data-act="quit" style="margin-top:4px;">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </div>
+        <div class="lbl">退出应用</div>
+        <div class="kbd"></div>
+      </div>
+    </div>
+
+    <!-- 状态提示 -->
+    <div id="toast"></div>
+  </div>
 
 <script>
-  const shell = document.getElementById('shell')
-  const ball = document.getElementById('ball')
-  const panel = document.getElementById('panel')
-  const statusBox = document.getElementById('status')
-  const api = window.noteAPI
+  const $ = (s) => document.querySelector(s);
+  const ball = $('#ball');
+  const panel = $('#panel');
+  const toast = $('#toast');
+  const api = window.noteAPI || {};
 
-  let expanded = false
-
-  // 展开面板（窗口同时放大）
-  async function expand() {
-    expanded = true
-    shell.style.display = 'none'
-    panel.classList.add('open')
-    try { await api.expandBubble() } catch (e) { /* ignore */ }
-  }
-  // 收起面板（窗口缩回小球）
-  async function collapse() {
-    expanded = false
-    panel.classList.remove('open')
-    shell.style.display = 'flex'
-    try { await api.collapseBubble() } catch (e) { /* ignore */ }
+  // 面板展开高度 = 估算内容高度（标题+5菜单+边距）→ 传给主进程撑高窗口
+  function panelNeededHeight() {
+    return Math.min(340, Math.max(200, panel.scrollHeight + 40));
   }
 
-  ball.addEventListener('click', expand)
-  document.getElementById('panel-ball').addEventListener('click', collapse)
-
-  function setStatus(text) {
-    statusBox.style.display = 'flex'
-    statusBox.textContent = text
-  }
-  function clearStatus() {
-    statusBox.style.display = 'none'
-  }
-  function toast(text, ms = 1800) {
-    statusBox.style.display = 'flex'
-    statusBox.textContent = text
-    clearTimeout(toast._t)
-    toast._t = setTimeout(() => { statusBox.style.display = 'none' }, ms)
-  }
-
-  // 新建笔记（悬浮球独立于主界面，直接创建新笔记）
-  async function createNote(title, content) {
+  let busy = false; // 防止连续点击导致 IPC/窗口尺寸竞争
+  async function setOpen(open) {
+    if (busy) return;
+    busy = true;
     try {
-      await api.saveNote({
-        title: title || '快速笔记',
-        courseId: '',
-        tags: [],
-        content: content || '',
-      })
-      toast('✓ 已保存到笔记')
-    } catch (e) {
-      toast('✕ 保存失败')
-    }
-  }
-
-  // ===== 语音转文字 =====
-  let recorder = null
-  let chunks = []
-  let stream = null
-  document.getElementById('mi-voice').addEventListener('click', async () => {
-    if (recorder && recorder.state === 'recording') { // 再次点击停止
-      recorder.stop()
-      return
-    }
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
-      recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
-      chunks = []
-      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data) }
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop())
-        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
-        const buf = await blob.arrayBuffer()
-        recorder = null
-        ball.classList.remove('recording')
-        document.getElementById('panel-ball').classList.remove('recording')
-        setStatus('转写中…')
-        try {
-          const text = await api.transcribeAudio(buf)
-          clearStatus()
-          if (!text || !text.trim()) { toast('未识别到语音'); return }
-          const firstLine = text.trim().split('\n')[0].slice(0, 20)
-          await createNote(`语音笔记 ${new Date().toLocaleTimeString()}`, text.trim())
-        } catch (err) {
-          clearStatus(); toast('✕ 转写失败')
-        }
+      if (open) {
+        // 先让主进程把窗口撑大（球心锚定，球不跳），再显示面板
+        await api.bubbleExpand ? api.bubbleExpand(true, panelNeededHeight()) : Promise.resolve();
+        panel.classList.add('open');
+        if (api.bubbleAction) {} // noop 占位防误用
+      } else {
+        if (api.bubbleCollapse) await api.bubbleCollapse();
+        panel.classList.remove('open');
       }
-      recorder.start()
-      ball.classList.add('recording')
-      document.getElementById('panel-ball').classList.add('recording')
-      toast('● 录音中… 再点菜单停止', 2500)
-    } catch (err) {
-      toast('✕ 无法使用麦克风')
+    } catch (e) { /* ignore */ }
+    busy = false;
+  }
+
+  // ── 拖动球（JS 手动实现）──
+  // 判别规则：按下后移动超过 4px 视为拖动（不触发 click），否则视为点击（展开/收起面板）
+  let _dragState = null;
+  ball.addEventListener('mousedown', async (e) => {
+    if (e.button !== 0) return;
+    _dragState = { sx: e.screenX, sy: e.screenY, moved: false };
+    ball.classList.add('dragging');
+    try { if (api.bubbleDragStart) await api.bubbleDragStart(); } catch (_) {}
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!_dragState) return;
+    const dx = e.screenX - _dragState.sx;
+    const dy = e.screenY - _dragState.sy;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) _dragState.moved = true;
+    if (_dragState.moved) {
+      try { if (api.bubbleDragMove) api.bubbleDragMove({ x: e.screenX, y: e.screenY }); } catch (_) {}
     }
-  })
-
-  // ===== 截图添加到笔记 =====
-  document.getElementById('mi-shot').addEventListener('click', async () => {
-    setStatus('截屏中…')
-    try {
-      const shot = await api.captureScreen({ mode: 'foreground' })
-      const src = await api.saveImage(shot.dataUri)
-      const md = `## 📸 屏幕截图 ${new Date().toLocaleString()}\n\n![截图](${src})\n`
-      await createNote(`截图笔记 ${new Date().toLocaleTimeString()}`, md)
-      clearStatus()
-      collapse()
-    } catch (err) {
-      clearStatus(); toast('✕ 截图失败')
+  });
+  window.addEventListener('mouseup', () => {
+    if (!_dragState) return;
+    const wasDrag = _dragState.moved;
+    _dragState = null;
+    ball.classList.remove('dragging');
+    if (wasDrag) {
+      // 拖完标记：下一次 click 需要被吞掉，避免拖完误展开
+      _suppressNextClick = true;
     }
-  })
+  });
+  let _suppressNextClick = false;
 
-  // ===== 打开主界面 =====
-  document.getElementById('mi-open').addEventListener('click', async () => {
-    try { await api.showMainWindow() } catch (e) { /* ignore */ }
-    collapse()
-  })
+  // 点击球 → 展开/收起（拖拽后不触发）
+  ball.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_suppressNextClick) { _suppressNextClick = false; return; }
+    const isOpen = panel.classList.contains('open');
+    setOpen(!isOpen);
+  });
 
-  // ===== 退出 =====
-  document.getElementById('mi-quit').addEventListener('click', async () => {
-    try { await api.quitApp() } catch (e) { /* ignore */ }
-  })
+  // 关闭按钮
+  $('#p-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(false);
+  });
 
-  // 点击空白处收起（点击面板自身背景）
-  panel.addEventListener('click', (e) => {
-    if (e.target === panel) collapse()
-  })
+  // 点击面板（含空白）不冒泡到球，避免"点菜单被当成点球收起/展开"
+  panel.addEventListener('click', (e) => e.stopPropagation());
+  panel.addEventListener('mousedown', (e) => e.stopPropagation());
+  panel.addEventListener('mouseup', (e) => e.stopPropagation());
+
+  const recItem = document.getElementById('rec-item');
+  const recIco = document.getElementById('rec-ico');
+  const recLbl = document.getElementById('rec-lbl');
+  const recBadge = document.getElementById('rec-badge');
+
+  // 更新录屏按钮状态
+  function setRecState(recording) {
+    if (!recItem) return;
+    if (recording) {
+      recItem.classList.add('recording');
+      ball && ball.classList.add('recording');        // 球也变红：一眼可见
+      recIco.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>';
+      recLbl.textContent = '停止录屏';
+      recBadge.textContent = '●';
+      recBadge.style.display = 'block';
+      recBadge.style.color = '#F87171';
+      recBadge.style.animation = 'rec-pulse 1s ease-in-out infinite';
+    } else {
+      recItem.classList.remove('recording');
+      ball && ball.classList.remove('recording');
+      recIco.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>';
+      recLbl.textContent = '录屏笔记';
+      recBadge.style.display = 'none';
+    }
+  }
+
+  // 菜单项 → 统一走主进程分发
+  document.querySelectorAll('.p-item').forEach((el) => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const act = el.dataset.act;
+      if (act === 'quit' || act === 'apps') {
+        // 退出/打开主界面这类全局动作先收起面板
+        setOpen(false);
+      }
+      if (api.bubbleAction) {
+        try { await api.bubbleAction(act) } catch (err) { /* ignore */ }
+      }
+      // 反馈类动作（capture/voice/rec）执行后也收起面板
+      if (act === 'capture' || act === 'voice' || act === 'rec') {
+        setTimeout(() => setOpen(false), 120);
+      }
+    });
+  });
+
+  // 阻止菜单冒泡到球（避免点菜单被当成点球）——上面已统一处理
+
+  // 外部 IPC 同步状态（主进程窗口尺寸变化时同步面板显隐，以及录屏状态）
+  if (api.onBubbleState) {
+    api.onBubbleState((state) => {
+      if (state && state.open) {
+        panel.classList.add('open');
+      } else if (state && state.open === false) {
+        panel.classList.remove('open');
+      }
+      if (state && state.toast) {
+        toast.textContent = state.toast;
+        toast.classList.add('show');
+        clearTimeout(window._t);
+        window._t = setTimeout(() => toast.classList.remove('show'), 1800);
+      }
+      // 录屏状态同步
+      if (state && typeof state.recording === 'boolean') {
+        setRecState(state.recording);
+      }
+    });
+  }
+
+  // 拖动结束或初始化时若有记忆尺寸（>110）→ 同步面板显示
+  try {
+    const needOpen = window.innerWidth > 150;
+    if (needOpen) panel.classList.add('open');
+  } catch (e) { /* ignore */ }
 </script>
 </body>
 </html>

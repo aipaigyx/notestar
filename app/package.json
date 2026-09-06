@@ -6,13 +6,17 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --emptyOutDir=false",
+    "build": "vite build",
     "test": "vitest run",
     "start": "node electron/start.cjs",
     "electron:dev": "concurrently \"vite\" \"wait-on tcp:5173 && node electron/start.cjs --dev\"",
-    "electron:build": "vite build --emptyOutDir=false && cross-env NODE_OPTIONS= ELECTRON_RUN_AS_NODE= electron-builder --win --x64"
+    "electron:build": "vite build && cross-env NODE_OPTIONS= ELECTRON_RUN_AS_NODE= electron-builder --win --x64",
+    "release": "vite build && cross-env NODE_OPTIONS= ELECTRON_RUN_AS_NODE= electron-builder --win --x64 --publish always",
+    "release:draft": "vite build && cross-env NODE_OPTIONS= ELECTRON_RUN_AS_NODE= electron-builder --win --x64 --publish always",
+    "pack": "node ../build/package-release.cjs"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "https-proxy-agent": "^5.0.1",
     "katex": "^0.18.4",
     "marked": "^18.0.9",
@@ -34,6 +38,12 @@
   "build": {
     "appId": "com.notestar.noteanalysis",
     "productName": "笔记星图",
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "YOUR_REPO_NAME",
+      "releaseType": "release"
+    },
     "directories": {
       "output": "release"
     },
@@ -47,32 +57,27 @@
     ],
     "extraResources": [
       {
-        "from": "../Ollama",
-        "to": "Ollama",
-        "filter": [
-          "ollama.exe",
-          "ollama app.exe",
-          "models/**/*",
-          "ggml*.dll",
-          "lib/**/*",
-          "cuda_*/**/*"
-        ]
-      },
-      {
         "from": "vendor/python",
         "to": "python"
       },
       {
-        "from": "vendor/whisper-models",
-        "to": "whisper-models"
-      },
-      {
         "from": "electron/transcribe.py",
         "to": "transcribe.py"
+      },
+      {
+        "from": "vendor/ffmpeg",
+        "to": "ffmpeg",
+        "filter": [
+          "bin/ffmpeg.exe",
+          "bin/ffprobe.exe"
+        ]
       }
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        "dir",
+        "nsis"
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
@@ -81,8 +86,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "笔记星图",
-      "differentialPackage": false,
-      "compression": "normal"
+      "differentialPackage": false
     }
   }
 }

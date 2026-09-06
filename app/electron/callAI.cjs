@@ -32,7 +32,8 @@ const AI_PLATFORMS = {
   nvidia: {
     hostname: 'integrate.api.nvidia.com',
     apiPath: '/v1/chat/completions',
-    defaultModel: 'meta/llama-3.1-8b-instruct',
+    // ⚠️ 2026-09-02 实测：meta/llama-3.1-8b 已下线 → 用真实可用的 nemotron-70b
+    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
   },
   local: {
     hostname: '127.0.0.1',
@@ -52,6 +53,10 @@ const VISION_CAPABLE_MODELS = [
   // 其他平台视觉模型
   'qwen2-vl', 'qwen2.5-vl', 'pixtral', 'llama-3.2-vision',
   'gpt-4o', 'gpt-4-vision', 'claude-3', 'gemini', 'glm-4v',
+  // Ollama 本地常用视觉模型（之前漏了导致 moondream 被误判为"不支持视觉"→图片被删！）
+  'moondream', 'minicpm-v', 'llama3.2-vision', 'llama3.2-11b-vision',
+  'llama3.2-90b-vision', 'pixtral', 'bakllava', 'llava-phi3', 'llava-llama3',
+  'llava-llama3.1', 'llava-llama3.2', 'wizardllava', 'yi-vl', 'deepseek-vl',
 ]
 
 function isVisionCapableModel(model) {
@@ -81,11 +86,14 @@ function resolveModelConfig(settings, operation = 'chat') {
     : (operation === 'generateNote' ? routing.quick : routing.deep)
   if (!route || !route.model) return settings
   const platform = AI_PLATFORMS[route.provider] || AI_PLATFORMS[settings.provider] || AI_PLATFORMS.deepseek
+  // 路由指定了 provider 时，取该平台的独立 key（apiKeys），local 无需 key
+  const routeKeys = (settings.apiKeys && typeof settings.apiKeys === 'object') ? settings.apiKeys : {}
+  const routeKey = routeKeys[route.provider] || settings.apiKey || ''
   return {
     ...settings,
     provider: route.provider || settings.provider,
     model: route.model,
-    apiKey: route.provider === 'local' ? '' : (route.apiKey || settings.apiKey),
+    apiKey: route.provider === 'local' ? '' : routeKey,
     hostname: route.hostname || settings.hostname || platform.hostname,
     apiPath: route.apiPath || settings.apiPath || platform.apiPath,
   }
@@ -130,8 +138,7 @@ function createAIModule({ logger, getProxyAgent }) {
           logger.warn('AI', '云端瞬时故障，等待后重试同一模型', { model, operation: options.operation || 'chat', attempt, maxAttempts, delayMs })
           await sleep(delayMs)
         }
-        return await callAI(settings, messages, onChunk, { ...options, attempt, maxAttempts })
-      } catch (error) {
+        return await callAI(settings, messages, onChunk, { ...options, attempt, maxAttempts })      } catch (error) {
         lastError = error
         if (!isRetryableAIError(error) || attempt === maxAttempts) break
         logger.warn('AI', '可重试的云端请求失败', { model, operation: options.operation || 'chat', attempt, code: error.code, statusCode: error.statusCode, message: error.message })
@@ -144,13 +151,25 @@ function createAIModule({ logger, getProxyAgent }) {
     throw lastError
   }
 
-  function callAI(settings, messages, onChunk, { outputTokens = 2048, operation = 'chat', attempt = 1, maxAttempts = 1 } = {}) {
+  function callAI(settings, messages, onChunk, { outputTokens = 2048, operation = 'chat', attempt = 1, maxAttempts = 1, onFinish, timeoutMs = 0 } = {}) {
     return new Promise((resolve, reject) => {
       if (!settings.apiKey && settings.provider !== 'local') { reject(new Error('未配置 API Key，请先在设置中填写')); return }
 
       settings = resolveModelConfig(settings, operation)
       const provider = settings.provider || 'deepseek'
       const platform = AI_PLATFORMS[provider] || AI_PLATFORMS.deepseek
+      // 防御：key 前缀必须与平台匹配（防止"把 DeepSeek 的 sk- key 串到 NVIDIA"这类错误）
+      // 只在已知前缀规则时校验，避免误伤
+      const KEY_PREFIX = {
+        nvidia: 'nvapi-', deepseek: 'sk-', openai: 'sk-', moonshot: 'sk-',
+      }
+      if (provider !== 'local' && settings.apiKey && KEY_PREFIX[provider]) {
+        const expect = KEY_PREFIX[provider]
+        if (!settings.apiKey.trim().startsWith(expect)) {
+          reject(new Error(`${platform.name || provider} 的 API Key 应以 "${expect}" 开头，当前填写的 key 属于其他平台（可能切换服务商时串用了 key）。请到 设置 → AI 配置 重新粘贴 ${provider} 专属 key。`))
+          return
+        }
+      }
       const model = settings.model || platform.defaultModel
       const startedAt = Date.now()
       let firstByteAt = null
@@ -217,6 +236,7 @@ function createAIModule({ logger, getProxyAgent }) {
           let buffer = ''
           let firstTokenAt = null
           let sawReasoning = false
+          let lastFinishReason = ''
           res.setEncoding('utf-8')
           res.on('data', (chunk) => {
             buffer += chunk
@@ -229,6 +249,7 @@ function createAIModule({ logger, getProxyAgent }) {
               try {
                 const parsed = JSON.parse(json)
                 const delta = parsed.choices?.[0]?.delta || {}
+                if (parsed.choices?.[0]?.finish_reason) lastFinishReason = parsed.choices[0].finish_reason
                 if (delta.reasoning_content) sawReasoning = true
                 if (delta.content) {
                   if (!firstTokenAt) {
@@ -246,7 +267,7 @@ function createAIModule({ logger, getProxyAgent }) {
           res.on('end', () => {
             logger.info('AI', '流式调用完成', {
               provider, operation, model, firstByteMs, firstTokenMs: firstTokenAt ? firstTokenAt - startedAt : null,
-              totalMs: Date.now() - startedAt, resultLength: fullText.length,
+              totalMs: Date.now() - startedAt, resultLength: fullText.length, finish: lastFinishReason,
             })
             if (!fullText && sawReasoning) {
               const err = new Error(`模型 ${model} 把输出额度全部用于思考，未生成回答内容。请改用非推理模型（如 deepseek-chat）或在设置中更换模型。`)
@@ -254,6 +275,7 @@ function createAIModule({ logger, getProxyAgent }) {
               reject(err)
               return
             }
+            if (typeof onFinish === 'function') onFinish(lastFinishReason)
             resolve(fullText)
           })
         } else {
@@ -276,6 +298,7 @@ function createAIModule({ logger, getProxyAgent }) {
                 return
               }
               logger.info('AI', '非流式调用完成', { provider, operation, model, firstByteMs, totalMs: Date.now() - startedAt, resultLength: content.length })
+              if (typeof onFinish === 'function') onFinish(result.choices?.[0]?.finish_reason)
               resolve(content)
             } catch (e) { reject(e) }
           })
@@ -286,10 +309,23 @@ function createAIModule({ logger, getProxyAgent }) {
         logger.error('AI', 'HTTP请求错误', { provider, operation, model, elapsedMs: Date.now() - startedAt, message: err.message, code: err.code })
         reject(err)
       })
-      const timeoutMs = isLocal ? 600000 : 90000
-      req.setTimeout(timeoutMs, () => {
-        logger.error('AI', `请求超时 ${timeoutMs / 1000}s`, { provider, operation, model, elapsedMs: Date.now() - startedAt })
-        const timeoutError = new Error(isLocal ? '本地模型响应超时，请检查 Ollama 是否在运行、模型是否已下载。' : '请求超过90秒仍未响应。免费云端模型可能正在排队，请稍后重试。')
+      // 跟拍视觉识别(follow) 单独给更短超时：避免首次加载视觉模型卡太久时前端等不到
+      // 调用方可显式传 timeoutMs 覆盖（如跟拍首帧 moondream 冷启动需放宽到 120s）
+      const followShort = operation === 'follow' && isLocal && !timeoutMs ? 40000 : 0
+      const effTimeout = timeoutMs || followShort || (isLocal ? 600000 : 90000)
+      req.setTimeout(effTimeout, () => {
+        logger.error('AI', `请求超时 ${effTimeout / 1000}s`, { provider, operation, model, elapsedMs: Date.now() - startedAt, timeoutMs })
+        const timeoutError = new Error(
+          timeoutMs
+            ? (operation === 'follow'
+                // 跟拍视觉识别显式放宽/收紧超时：跳过 AI 仅保存截图是设计内兜底
+                ? `视觉识别超时（${Math.round(effTimeout / 1000)}s），已跳过 AI 仅保存截图。`
+                : (isLocal
+                    ? `本地模型响应超时（${Math.round(effTimeout / 1000)}s），请检查 Ollama 是否在运行、模型是否已下载。`
+                    : `请求超过 ${Math.round(effTimeout / 1000)}s 仍未响应。免费云端模型可能正在排队，请稍后重试。`))
+            : (followShort ? '本地视觉模型响应超时（40s），已跳过 AI 仅保存截图。' :
+            (isLocal ? '本地模型响应超时，请检查 Ollama 是否在运行、模型是否已下载。' : '请求超过90秒仍未响应。免费云端模型可能正在排队，请稍后重试。'))
+        )
         timeoutError.code = 'ETIMEDOUT'
         req.destroy(timeoutError)
         reject(timeoutError)

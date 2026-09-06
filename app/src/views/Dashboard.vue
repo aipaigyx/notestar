@@ -6,6 +6,20 @@
 
     <div class="content-layer">
       <div class="main-area">
+        <!-- Day 3 P1-V4：录屏占用超阈值告警（主进程 recGetUsage / 定时检查后推送） -->
+        <div v-if="recQuotaAlert.visible" class="quota-alert">
+          <div class="quota-left">
+            <span class="quota-ico">⚠️</span>
+            <div>
+              <div class="quota-title">录屏占用空间已达 <b>{{ recQuotaAlert.usedGB }} GB</b>，超过阈值 <b>{{ recQuotaAlert.thresholdGB }} GB</b></div>
+              <div class="quota-desc">为避免磁盘占用持续增长，建议清理几天前不再需要的录屏会话。</div>
+            </div>
+          </div>
+          <div class="quota-actions">
+            <button class="quota-btn primary" @click="goToSettings('#rec-cleanup')">前往清理</button>
+            <button class="quota-btn ghost" @click="recQuotaAlert.visible = false">知道了</button>
+          </div>
+        </div>
         <!-- 顶部搜索栏 -->
         <div class="top-bar">
           <div class="search-wrap">
@@ -16,11 +30,11 @@
             <input v-model="searchQuery" class="search-input" placeholder="搜索笔记、知识点..." @keyup.enter="handleSearch" />
           </div>
           <div class="top-actions">
-            <button class="icon-btn" title="导入转写文本" @click="goToNotes">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1V11 M5 7L9 11L13 7 M2 14H16" stroke="#6B6B96" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <button type="button" class="icon-btn" aria-label="导入转写文本" title="导入转写文本" @click="goToNotes">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 1V11 M5 7L9 11L13 7 M2 14H16" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/></svg>
             </button>
-            <button class="icon-btn" title="新建笔记" @click="newNote">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1V17 M1 9H17" stroke="#6B6B96" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <button type="button" class="icon-btn" aria-label="新建笔记" title="新建笔记" @click="newNote">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 1V17 M1 9H17" stroke="var(--color-text-secondary)" stroke-width="1.5" stroke-linecap="round"/></svg>
             </button>
           </div>
         </div>
@@ -35,9 +49,9 @@
                 <path d="M24 28H40 M24 34H40 M24 40H34" stroke="#D0D0E0" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
-            <h2 class="empty-title">开始你的学习之旅</h2>
-            <p class="empty-desc">导入录音转写文本，AI 自动整理成结构化笔记</p>
-            <button class="empty-start-btn" @click="goToNotes">导入第一篇笔记</button>
+            <h2 class="empty-title">你的逐火之旅，由此启程</h2>
+            <p class="empty-desc">奉上你的录音转写，AI 将为你点燃第一颗知识火种</p>
+            <button class="empty-start-btn" @click="goToNotes">点燃第一颗火种</button>
           </div>
 
           <!-- 有数据时的正常展示 -->
@@ -132,6 +146,23 @@
               </div>
             </div>
 
+            <!-- 学习周报 -->
+            <div class="chart-card report-card">
+              <div class="card-header">
+                <h3 class="card-title">📊 学习周报</h3>
+                <button class="link-btn" @click="generateReport" :disabled="reportBusy">{{ reportBusy ? '生成中…' : '✨ 生成周报' }}</button>
+              </div>
+              <div class="report-stats">
+                <span class="report-stat">📝 本周 {{ weekNoteCount }} 篇笔记</span>
+                <span class="report-dot">·</span>
+                <span class="report-stat">⏱ 学习 {{ weekMinutes }} 分钟</span>
+                <span class="report-dot">·</span>
+                <span class="report-stat">🔥 打卡 {{ stats?.streakDays || 0 }} 天</span>
+              </div>
+              <div v-if="reportText" class="report-body" v-html="reportHtml"></div>
+              <div v-else class="report-hint">AI 根据本周学习数据生成总结、薄弱点与下周建议</div>
+            </div>
+
             <!-- 近期笔记 -->
             <div class="section-block">
               <div class="section-header">
@@ -175,14 +206,21 @@
       <!-- AI 面板 -->
       <div class="ai-panel">
         <div class="ai-header">
-          <div class="ai-avatar"><span>AI</span></div>
+          <div class="ai-avatar">
+            <!-- 来古士 · 智械紫瞳 -->
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M2 10C4.2 6.2 7 5.4 10 5.4C13 5.4 15.8 6.2 18 10C15.8 13.8 13 14.6 10 14.6C7 14.6 4.2 13.8 2 10Z" fill="white" opacity="0.95"/>
+              <circle cx="10" cy="10" r="3.1" fill="#5E2B91"/>
+              <circle cx="8.9" cy="8.9" r="1.1" fill="white" opacity="0.9"/>
+            </svg>
+          </div>
           <div class="ai-title-wrap">
-            <span class="ai-title">AI 学习助手</span>
+            <span class="ai-title">来古士</span>
             <span class="ai-subtitle">{{ hasApiKey ? '随时为你答疑' : '未配置 API Key' }}</span>
           </div>
         </div>
 
-        <div v-if="!hasApiKey" class="api-warn-card" @click="goToSettings">
+        <div v-if="!hasApiKey" class="api-warn-card" @click="() => goToSettings()">
           <span class="api-warn-text">点击此处配置 AI API Key</span>
         </div>
 
@@ -222,14 +260,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { notes, courses, stats, chatSessions, currentNote, settings, setPlan, addStudyTime } from '../store'
-import { showToast } from '../composables/useDialog'
+import { notes, courses, stats, chatSessions, currentNote, settings, setPlan, addStudyTime, renderMarkdown, localStorageMigrationNeed, migrateFromLocalStorageAndClear, refreshDashboardData } from '../store'
+import { showToast, showConfirm, showAlert } from '../composables/useDialog'
 
 const router = useRouter()
 const searchQuery = ref('')
 const quickQuestion = ref('')
+
+// ========== 学习周报 ==========
+const reportBusy = ref(false)
+const reportText = ref('')
+const reportHtml = computed(() => reportText.value ? renderMarkdown(reportText.value) : '')
+const weekNoteCount = computed(() => {
+  const weekAgo = Date.now() - 7 * 86400000
+  return notes.value.filter(n => new Date(n.createdAt).getTime() > weekAgo).length
+})
+const weekMinutes = computed(() => (stats.value?.weeklyMinutes || []).reduce((a, b) => a + b, 0))
+const generateReport = async () => {
+  if (reportBusy.value) return
+  reportBusy.value = true
+  try {
+    const data = {
+      weekNotes: weekNoteCount.value,
+      weekMinutes: weekMinutes.value,
+      streakDays: stats.value?.streakDays || 0,
+      totalNotes: notes.value.length,
+      courseCount: courses.value.length,
+      dueReviews: dueReviews.value.length,
+      weekTrend: stats.value?.weeklyMinutes || [],
+      recentNoteTitles: notes.value.slice(0, 8).map(n => n.title),
+    }
+    reportText.value = await (window as any).noteAPI.weeklyReport(data)
+  } catch (e: any) {
+    showToast((e && e.message) || '周报生成失败', 'error')
+  } finally {
+    reportBusy.value = false
+  }
+}
 
 const weekDays = ['一', '二', '三', '四', '五', '六', '日']
 const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
@@ -323,7 +392,30 @@ const formatDate = (dateStr: string) => {
 const goToNotes = () => router.push('/notes')
 const goToGraph = () => router.push('/graph')
 const goToAssistant = () => router.push('/assistant')
-const goToSettings = () => router.push('/settings')
+// 支持传 hash 锚点（如 '#rec-cleanup'）→ 跳 Settings 后自动滚到对应区域
+const goToSettings = (hash?: string) => {
+  router.push(hash ? { path: '/settings', hash } : '/settings')
+  if (hash) setTimeout(() => {
+    const el = document.getElementById(hash.slice(1))
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 150)
+}
+
+// Day 3 P1-V4：录屏超阈值告警（主进程 recGetUsage / 定时检查后推送）
+const recQuotaAlert = reactive({ visible: false, usedGB: 0, thresholdGB: 2 })
+let offRecOverQuota: (() => void) | null = null
+function bindRecOverQuota() {
+  const api = (window as any).noteAPI
+  if (!api || typeof api.onRecOverQuota !== 'function') return
+  offRecOverQuota = api.onRecOverQuota((payload: any) => {
+    const used = Number(payload?.bytes || 0)
+    const threshold = Number(payload?.thresholdGB || 2)
+    recQuotaAlert.usedGB = Math.max(0.01, +(used / 1024 / 1024 / 1024).toFixed(2))
+    recQuotaAlert.thresholdGB = Math.max(0.2, threshold)
+    recQuotaAlert.visible = true
+  })
+}
+onUnmounted(() => { try { offRecOverQuota && offRecOverQuota() } catch (_) {} })
 
 const openNote = (id: string) => {
   currentNote.value = notes.value.find(n => n.id === id) || null
@@ -347,6 +439,47 @@ const askQuick = () => {
     quickQuestion.value = ''
   }
 }
+
+// ========== P0-1 修复：检测浏览器模式 → 桌面版 一键迁移弹窗 ==========
+let migrationPromptShown = false
+watch(
+  () => localStorageMigrationNeed.value,
+  async (need) => {
+    if (!need || migrationPromptShown) return
+    migrationPromptShown = true
+    const summary = []
+    if (need.notes > 0) summary.push(`${need.notes} 条笔记`)
+    if (need.courses > 0) summary.push(`${need.courses} 个课程`)
+    if (need.chats > 0) summary.push(`${need.chats} 个对话`)
+    if (need.statsMinutes > 0) summary.push(`${need.statsMinutes} 分钟学习时长`)
+    const ok = await showConfirm({
+      title: '检测到未迁移的笔记',
+      message:
+        `你之前在浏览器模式下写过 ${summary.join('、')}，` +
+        '这些数据和桌面版是分开存放的，所以在桌面版看不到它们。\n\n' +
+        '是否现在把它们一键合并到桌面版里？（按 id 去重，不会覆盖现有数据；浏览器模式下的原数据仍会保留一份兜底）',
+      confirmText: '立即合并',
+      cancelText: '暂不处理',
+    })
+    if (!ok) { migrationPromptShown = false; return }
+    try {
+      showToast('正在迁移，请稍候...', 'info')
+      const { added, skipped } = await migrateFromLocalStorageAndClear()
+      showToast(`迁移完成：新增 ${added} 条，跳过重复 ${skipped} 条`, 'success')
+    } catch (e: any) {
+      migrationPromptShown = false
+      showAlert('迁移失败', e?.message || String(e))
+    }
+  },
+  { immediate: true }
+)
+
+// 录屏超阈值监听放到 onMounted（window.noteAPI 挂载后注册）
+onMounted(() => { bindRecOverQuota() })
+
+// ✅ 数据保鲜：每次进入 Dashboard 轻量刷新 stats/notes/courses，
+// 确保统计卡/打卡/近期笔记与最新数据一致（修复"改完笔记回主页面数字不更新"）
+onMounted(() => { refreshDashboardData() })
 </script>
 
 <style scoped>
@@ -354,7 +487,7 @@ const askQuick = () => {
 .content-layer { position: relative; z-index: 1; width: 100%; height: 100%; display: flex; }
 .main-area { flex: 1; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
 
-.top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 56px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255, 192, 213, 0.35); }
+.top-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 56px; background: var(--color-bg-soft); border-bottom: 1px solid var(--color-border); }
 .search-wrap { display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; padding: 0 14px; background: rgba(255, 255, 255, 0.85); border: 1.5px solid rgba(255, 192, 213, 0.5); border-radius: var(--radius-pill); transition: all 0.2s; }
 .search-wrap:focus-within { border-color: var(--color-pink); box-shadow: var(--shadow-glow); }
 .search-input { flex: 1; height: 100%; font-size: 13px; color: var(--color-text); background: transparent; border: none; outline: none; }
@@ -407,6 +540,21 @@ const askQuick = () => {
 /* 学习管理三卡片 */
 .learn-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .plan-card, .focus-card, .review-card { min-height: 170px; }
+
+/* 学习周报 */
+.report-card { min-height: 170px; }
+.report-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.report-stat { font-size: 12px; color: var(--color-text-secondary); }
+.report-dot { color: var(--color-text-muted); }
+.report-body {
+  margin-top: 10px; padding: 12px 14px; border-radius: 12px;
+  background: var(--color-bg-soft); border: 1px solid var(--color-border);
+  font-size: 12.5px; color: var(--color-text-secondary); line-height: 1.75; max-height: 260px; overflow-y: auto;
+}
+.report-body :deep(h2) { font-size: 13px; margin: 8px 0 4px; color: var(--color-pink); }
+.report-body :deep(h3) { font-size: 12.5px; margin: 6px 0 3px; color: var(--color-purple); }
+.report-body :deep(li) { margin-left: 16px; }
+.report-hint { margin-top: 10px; font-size: 11.5px; color: var(--color-text-muted); }
 .plan-progress { height: 10px; border-radius: var(--radius-pill); background: rgba(183,148,246,0.15); overflow: hidden; margin: 8px 0; }
 .plan-fill { height: 100%; border-radius: var(--radius-pill); background: var(--gradient-pink-purple); transition: width 0.6s ease; box-shadow: 0 0 8px rgba(255,107,157,0.4); }
 .plan-info { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 10px; }
@@ -435,7 +583,7 @@ const askQuick = () => {
 .bar-fill { width: 100%; max-width: 32px; border-radius: 8px 8px 3px 3px; min-height: 4px; transition: height 0.5s ease; background: var(--gradient-pink-purple); box-shadow: 0 2px 8px rgba(255, 107, 157, 0.25); }
 .bar-label { font-size: 10px; color: var(--color-text-muted); font-weight: 500; }
 
-.ai-panel { width: 300px; height: 100%; display: flex; flex-direction: column; padding: 20px; gap: 16px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-left: 1px solid rgba(255, 192, 213, 0.4); flex-shrink: 0; }
+.ai-panel { width: 300px; height: 100%; display: flex; flex-direction: column; padding: 20px; gap: 16px; background: var(--color-bg-soft); border-left: 1px solid var(--color-border); flex-shrink: 0; }
 .ai-header { display: flex; align-items: center; gap: 10px; }
 .ai-avatar { width: 38px; height: 38px; border-radius: var(--radius-pill); background: var(--gradient-pink-purple); display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(255, 107, 157, 0.3); }
 .ai-avatar span { color: white; font-size: 12px; font-weight: 700; }
@@ -473,4 +621,23 @@ const askQuick = () => {
 .ai-send-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--gradient-pink-purple); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-pink); flex-shrink: 0; cursor: pointer; border: none; transition: all 0.15s; }
 .ai-send-btn:hover { transform: scale(1.08); box-shadow: 0 6px 16px rgba(255, 107, 157, 0.4); }
 .ai-send-btn:active { transform: scale(0.95); }
+
+/* Day 3 P1-V4：录屏超阈值告警 banner */
+.quota-alert {
+  margin: 10px 20px 0 20px; padding: 12px 16px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,150,50,0.12), rgba(255,107,157,0.10));
+  border: 1px solid rgba(255,150,50,0.35);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.quota-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+.quota-ico { font-size: 22px; flex-shrink: 0; }
+.quota-title { font-size: 13px; font-weight: 700; color: var(--color-text); line-height: 1.5; }
+.quota-title b { color: var(--color-pink); }
+.quota-desc { font-size: 11.5px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.5; }
+.quota-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.quota-btn { padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.quota-btn.primary { background: var(--gradient-pink-purple); color: white; box-shadow: 0 3px 10px rgba(255,107,157,0.25); }
+.quota-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(255,107,157,0.35); }
+.quota-btn.ghost { background: rgba(255,255,255,0.7); color: var(--color-text-secondary); border-color: var(--color-border); }
+.quota-btn.ghost:hover { color: var(--color-pink); border-color: var(--color-pink); }
 </style>

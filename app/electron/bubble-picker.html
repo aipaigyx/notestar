@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:;">
+<title>选择要录制的窗口或屏幕</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei",sans-serif;background:#1a1a2e;color:#eee;padding:16px}
+h2{font-size:16px;margin-bottom:12px;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow-y:auto;max-height:340px}
+.item{background:#262640;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:.15s}
+.item:hover{border-color:#6c5ce7;background:#2e2e4a}
+.item.selected{border-color:#00cec9;background:#1e3a3a}
+.thumb{width:100%;aspect-ratio:16/10;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#666;font-size:12px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.lbl{padding:6px 10px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl.type-screen{color:#00cec9}
+.lbl.type-window{color:#fdcb6e}
+.bar{margin-top:12px;display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.bar .err{color:#f87171;font-size:12px;flex:1}
+button{padding:8px 20px;border:none;border-radius:6px;font-size:13px;cursor:pointer}
+.btn-ok{background:#6c5ce7;color:#fff}
+.btn-ok:disabled{background:#555;cursor:not-allowed}
+.btn-cancel{background:#444;color:#ccc}
+.loading{padding:32px;color:#888;font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<h2>选择要录制的窗口或屏幕</h2>
+<div id="content" class="loading">正在加载可录制的窗口与屏幕…</div>
+<div class="bar">
+  <span class="err" id="err"></span>
+  <button class="btn-cancel" id="cancel">取消</button>
+  <button class="btn-ok" id="ok" disabled>确认选择</button>
+</div>
+<script>
+  const api = window.noteAPI || {};
+  let sources = [];
+  let selected = null;
+  const $content = document.getElementById('content');
+  const $ok = document.getElementById('ok');
+  const $err = document.getElementById('err');
+
+  function render() {
+    if (!sources || !sources.length) {
+      $content.className = 'loading';
+      $content.textContent = '没有发现可录制的窗口或屏幕';
+      return;
+    }
+    $content.className = 'grid';
+    $content.innerHTML = sources.map((s, i) => {
+      const thumb = s.thumbnail || '';
+      const label = (s.name || '未命名').slice(0, 80).replace(/"/g, '&quot;');
+      const type = (s.id || '').startsWith('screen:') ? '屏幕' : '窗口';
+      return `<div class="item" data-idx="${i}">
+        <div class="thumb">${thumb ? `<img src="${thumb}">` : '无预览'}</div>
+        <div class="lbl ${type === '屏幕' ? 'type-screen' : 'type-window'}">[${type}] ${label}</div>
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.item').forEach(el => {
+      el.onclick = () => {
+        document.querySelectorAll('.item').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        selected = parseInt(el.dataset.idx);
+        $ok.disabled = false;
+      };
+    });
+  }
+
+  async function loadSources() {
+    try {
+      if (!api.pickerGetSources) throw new Error('pickerGetSources 不可用');
+      sources = await api.pickerGetSources();
+      $err.textContent = '';
+      render();
+    } catch (e) {
+      $err.textContent = '加载失败：' + (e && e.message || e);
+      $content.className = 'loading';
+      $content.textContent = '加载源失败';
+    }
+  }
+
+  $ok.onclick = () => {
+    if (selected == null) return;
+    const src = sources[selected];
+    if (api.pickerSelect) api.pickerSelect({ ok: true, id: src.id, name: src.name });
+    window.close();
+  };
+  document.getElementById('cancel').onclick = () => {
+    if (api.pickerSelect) api.pickerSelect({ ok: false, error: 'cancelled' });
+    window.close();
+  };
+
+  window.addEventListener('error', (e) => {
+    $err.textContent = '页面错误：' + (e.error?.message || e.message);
+  });
+
+  loadSources();
+</script>
+</body>
+</html>

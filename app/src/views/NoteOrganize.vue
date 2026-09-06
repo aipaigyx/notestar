@@ -9,6 +9,7 @@
         <div class="search-bar">
           <input ref="searchInput" v-model="searchQuery" class="search-input" placeholder="搜索笔记...（Ctrl+K）" />
           <button class="new-note-btn plain" @click="showImportDialog = true" title="导入转写文本 / 音频转文字">导入</button>
+          <button class="new-note-btn plain" @click="toggleBatchMode" title="批量选择 / 删除 / 移动">{{ batchMode ? '完成' : '批量' }}</button>
           <button class="new-note-btn primary" @click="createNewNote">+ 新建</button>
         </div>
 
@@ -28,6 +29,17 @@
           <button class="filter-tab recycle" :class="{ active: showRecycleBin }" @click="toggleRecycleBin">
             🗑 回收站 ({{ deletedNotes.length }})
           </button>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div v-if="batchMode" class="batch-bar">
+          <button class="batch-btn" @click="toggleSelectAll">☑ 全选当前</button>
+          <select v-model="batchCourseId" class="batch-course">
+            <option value="">移动到课程…</option>
+            <option v-for="c in courses" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+          <button class="batch-btn" :disabled="!selectedIds.size || !batchCourseId" @click="batchMoveCourse">移动</button>
+          <button class="batch-btn danger" :disabled="!selectedIds.size" @click="batchDelete">删除选中 ({{ selectedIds.size }})</button>
         </div>
 
         <!-- 回收站视图 -->
@@ -54,9 +66,16 @@
             v-for="note in filteredNotes"
             :key="note.id"
             class="note-card"
-            :class="{ selected: currentNote?.id === note.id }"
+            :class="{ selected: currentNote?.id === note.id, batch: batchMode }"
             @click="selectNote(note)"
           >
+            <input
+              v-if="batchMode"
+              type="checkbox"
+              class="note-check"
+              :checked="selectedIds.has(note.id)"
+              @click.stop="toggleSelect(note.id)"
+            />
             <div class="note-color-bar" :style="{ background: getCourseColor(note.courseId) }"></div>
             <div class="note-card-body">
               <div class="note-card-top">
@@ -80,6 +99,9 @@
           <div class="editor-header">
             <input v-model="currentNote.title" class="editor-title" placeholder="输入标题..." @input="markDirty" />
             <div class="editor-actions">
+              <button class="editor-btn review" @click="goReview" :title="followSessionForNote ? '播放跟拍录屏复习（视频与笔记条目联动）' : '当前笔记暂无关联录屏'">
+                ▶ 沉浸式复习
+              </button>
               <button class="editor-btn import" @click="showImportDialog = true" title="导入转写文本 / 粘贴文本 / 音频转文字">
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="vertical-align: -2px; margin-right: 4px;">
                   <path d="M7 1V9M3.5 5.5L7 9.5L10.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -181,7 +203,11 @@
               <button class="tts-rate-btn" :class="{ active: ttsRate === 1.2 }" @click="setTtsRate(1.2)">快</button>
             </div>
             <span v-if="ttsPlaying" class="tts-progress">{{ ttsIdx + 1 }}/{{ ttsTotal }}</span>
+            <button class="tts-btn" @click="exportAudio" :disabled="audioBusy" title="生成笔记音频文件（通勤复习听）">
+              {{ audioBusy ? '生成中…' : '💾 导出音频' }}
+            </button>
           </div>
+          <audio v-if="audioSrc" ref="audioRef" :src="audioSrc" controls class="note-audio-bar"></audio>
 
           <textarea
             v-if="editorMode === 'edit'"
@@ -240,6 +266,20 @@
         <div class="outline-body" v-if="rightPanelTab === 'outline' && currentNote">
           <div v-for="(line, i) in noteOutline" :key="i" class="outline-item" :class="{ heading: line.isHeading }">
             {{ line.text }}
+          </div>
+        </div>
+
+        <!-- 相关笔记（自动双链：标签+标题关键词相似度） -->
+        <div class="outline-body" v-if="rightPanelTab === 'outline' && currentNote && relatedNotes.length">
+          <h4 class="related-title">🔗 相关笔记</h4>
+          <div
+            v-for="r in relatedNotes"
+            :key="r.id"
+            class="related-item"
+            @click="selectNote(r)"
+          >
+            <span class="related-name">{{ r.title || '未命名' }}</span>
+            <span class="related-meta">{{ r.tags?.slice(0, 2).join('·') || r.courseId ? getCourseName(r.courseId) : '' }}</span>
           </div>
         </div>
 
@@ -616,7 +656,7 @@
     </div>
 
     <!-- 新建课程对话框 -->
-    <div v-if="showCapturePicker" class="modal-overlay" @click.self="showCapturePicker = false">
+    <div v-if="showCapturePicker" class="modal-overlay" @click.self="closeCapturePickerWithCancelReply">
       <div class="modal-box capture-box">
         <h3 class="modal-title">选择截屏目标</h3>
         <p class="modal-sub">选一次即可记住，之后点「截屏」直接截取该窗口（正在播放的视频画面）</p>
@@ -634,7 +674,7 @@
           </div>
         </div>
         <div class="modal-actions">
-          <button class="modal-btn cancel" @click="showCapturePicker = false">取消</button>
+          <button class="modal-btn cancel" @click="closeCapturePickerWithCancelReply">取消</button>
         </div>
       </div>
     </div>
@@ -664,13 +704,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
-  notes, courses, currentNote, createNote, updateNote, removeNote,
+  notes, courses, currentCourseId, currentNote, createNote, updateNote, removeNote, loadAllData, pendingNoteOpen, frontendLogger,
   createCourse, importFiles, generateNoteFromText, summarizeNote, analyzeNote, expandNote,
-  addStudyTime, renderMarkdown, isElectron, frontendLogger, selectImage, readClipboardImage, saveImage, exportNotes,
+  addStudyTime, renderMarkdown, isElectron, selectImage, readClipboardImage, saveImage, exportNotes,
   listScreenSources, captureScreen, getAnalysisCache,
-  getDeletedNotes, restoreNote, purgeNote,
+  getDeletedNotes, restoreNote, purgeNote, settings, saveSettings,
 } from '../store'
 import type { Note, ImportedFile, NoteAnalysis, NoteExpansion, KnowledgeTreeNode } from '../types'
 import { showConfirm as globalShowConfirm, showAlert as globalShowAlert, showToast } from '../composables/useDialog'
@@ -680,8 +720,78 @@ import KnowledgeTree from '../components/note/KnowledgeTree.vue'
 import ChartRenderer from '../components/note/ChartRenderer.vue'
 
 const route = useRoute()
+// 跟拍复习入口：当前笔记若有对应录屏会话则显示
+const followSessions = ref<any[]>([])
+const followSessionForNote = computed(() => {
+  const nid = currentNote.value?.id
+  if (!nid) return null
+  // 宽松匹配：trim + String() 防止类型/空格问题
+  const nidStr = String(nid).trim()
+  return followSessions.value.find((s: any) => String(s?.noteId || '').trim() === nidStr) || null
+})
+
+// 关键：用户点开笔记后 currentNote 才有值，此时重新 load sessions 再匹配
+watch(() => currentNote.value?.id, (newId) => {
+  if (newId) {
+    // currentNote 变化后确保 sessions 已加载（onMounted 可能在 currentNote 初始化前就跑了）
+    loadFollowSessions()
+  }
+})
+
+const goReview = async () => {
+  let s = followSessionForNote.value
+  const router = useRouter()
+  // 如果 computed 没匹配上（可能是 sessions 还没 load 完），强制 reload 再试一次
+  if (!s) {
+    try { await loadFollowSessions() } catch (_) {}
+    s = followSessionForNote.value
+  }
+  if (s) {
+    router.push({ path: '/review', query: { sessionId: s.sessionId } })
+  } else {
+    router.push({ path: '/review' })
+  }
+}
+const loadFollowSessions = async () => {
+  try {
+    const list = await (window as any).noteAPI.recListSessions()
+    followSessions.value = list
+    const nid = currentNote.value?.id
+    // 诊断：打印所有有视频的会话的 noteId
+    const withVideo = list.filter((s: any) => (s.segments?.length || 0) > 0)
+    const noteIds = withVideo.map((s: any) => `${s.sessionId}→noteId=${s.noteId}`).join(', ')
+    // 用宽松匹配（trim + 隐式转换）
+    const matched = list.find((s: any) => String(s.noteId || '').trim() === String(nid || '').trim())
+    console.log('[DEBUG] loadFollowSessions', { total: list.length, currentNoteId: nid, matchedSession: matched?.sessionId || null, withVideoNoteIds: noteIds })
+    if ((window as any).noteAPI?.logWrite) {
+      try { await (window as any).noteAPI.logWrite('INFO', 'NoteOrganize', `loadFollowSessions total=${list.length} currentNoteId=${nid} matched=${matched?.sessionId || 'null'} | noteIds=[${noteIds}]`) } catch(_) {}
+    }
+  } catch (e: any) {
+    console.error('[DEBUG] loadFollowSessions error', e)
+    if ((window as any).noteAPI?.logWrite) {
+      try { await (window as any).noteAPI.logWrite('ERROR', 'NoteOrganize', `loadFollowSessions error: ${e?.message || e}`) } catch(_) {}
+    }
+  }
+}
 const searchQuery = ref('')
 const selectedCourse = ref('all')
+
+// ⚠️ 修复：侧栏学科点击没反应 —— selectedCourse 与 store.currentCourseId 双向同步。
+// 侧栏点击课程只改 currentCourseId（且不跳路由/重复导航时不触发 watch(route.query)），
+// 这里监听 currentCourseId 驱动筛选，保证任何入口（侧栏/顶部筛选/路由）都一致生效。
+watch(currentCourseId, (id) => {
+  const target = id || 'all'
+  if (selectedCourse.value !== target) {
+    selectedCourse.value = target
+  }
+}, { immediate: true })
+// 顶部筛选点击 → 反向同步回 currentCourseId（侧栏高亮跟随）
+watch(selectedCourse, (val) => {
+  const target = val === 'all' ? '' : val
+  if (currentCourseId.value !== target) {
+    currentCourseId.value = target
+  }
+})
 const isDirty = ref(false)
 const newTag = ref('')
 const editorMode = ref<'edit' | 'preview'>('edit')
@@ -809,6 +919,30 @@ const startTTS = () => {
   ttsPlaying.value = true
   ttsPaused.value = false
   speakSentenceAt(0)
+}
+
+// ========== 导出复习音频（SAPI 合成 wav，通勤听） ==========
+const audioBusy = ref(false)
+const audioSrc = ref('')
+const audioRef = ref<HTMLAudioElement | null>(null)
+const exportAudio = async () => {
+  if (!currentNote.value?.id || audioBusy.value) return
+  audioBusy.value = true
+  try {
+    const dataUri = await (window as any).noteAPI.noteAudio(currentNote.value.id)
+    if (dataUri) {
+      audioSrc.value = dataUri
+      await nextTick()
+      try { audioRef.value?.play() } catch (e) { /* ignore */ }
+      showToast('音频已生成，可播放/下载', 'success')
+    } else {
+      showToast('生成失败（笔记为空或语音不可用）', 'error')
+    }
+  } catch (e) {
+    showToast('生成失败', 'error')
+  } finally {
+    audioBusy.value = false
+  }
 }
 
 const pauseTTS = () => { speechSynthesis.pause(); ttsPaused.value = true }
@@ -1433,24 +1567,180 @@ const insertImageRef = async (dataUri: string, altText: string) => {
 }
 
 // ========== 一键截屏（看视频记笔记） ==========
-const rememberedSourceId = ref(localStorage.getItem('notestar-capture-source') || '')
-const showCapturePicker = ref(false)
-const captureSources = ref<{ id: string; name: string; isScreen: boolean; thumbnail: string }[]>([])
+// Day 2 P0-V1 升级：优先走前端 Canvas 截 displayMedia 流（<50ms），失败才回退主进程 desktopCapturer（~400ms+）
+// 说明：navigator.mediaDevices.getDisplayMedia 由 Chromium 原生弹"窗口选择器"（最可靠，不会截错），
+//       选中后 MediaStream 会一直保存在内存直到用户点"停止共享"，后续每次截图直接 drawImage 视频帧。
+let _captureStream: MediaStream | null = null
+let _captureVideo: HTMLVideoElement | null = null
 
-// 一键截屏：截取记住的窗口；未设置时自动截当前活动窗口（通常就是视频）
+async function acquireCaptureStream(): Promise<{ stream: MediaStream; videoEl: HTMLVideoElement; label: string }> {
+  // 1) 已有 stream 且 track 仍是 live → 直接复用
+  const liveTrack = _captureStream?.getVideoTracks()[0]
+  if (_captureStream && _captureVideo && liveTrack && liveTrack.readyState === 'live') {
+    return { stream: _captureStream, videoEl: _captureVideo, label: liveTrack.label || '屏幕共享' }
+  }
+  // 2) 没 stream 或 track 已结束 → 重新 getDisplayMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    throw new Error('当前环境不支持屏幕分享（getDisplayMedia），请用最新版 Electron')
+  }
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      frameRate: { ideal: 30, max: 60 },
+    },
+    audio: false,
+  })
+  const track = stream.getVideoTracks()[0]
+  const label = track?.label || '屏幕共享'
+  // 3) 创建隐藏 video 元素，用来 feed drawImage
+  const videoEl = document.createElement('video')
+  videoEl.muted = true
+  videoEl.playsInline = true
+  videoEl.autoplay = true
+  videoEl.srcObject = stream
+  videoEl.style.position = 'fixed'
+  videoEl.style.left = '-99999px'
+  videoEl.style.top = '-99999px'
+  videoEl.style.width = '1px'
+  videoEl.style.height = '1px'
+  videoEl.style.opacity = '0'
+  document.body.appendChild(videoEl)
+  await videoEl.play().catch(() => {})
+  // 4) 用户点"停止共享"后清理引用，下次截图重新弹选择器
+  track?.addEventListener('ended', () => {
+    try { videoEl.remove() } catch (_) {}
+    _captureStream = null
+    _captureVideo = null
+  })
+  _captureStream = stream
+  _captureVideo = videoEl
+  return { stream, videoEl, label }
+}
+
+// 把当前 video 画面画到 canvas，返回 JPEG dataURI（质量 82）
+async function captureFrameToJpeg(
+  videoEl: HTMLVideoElement,
+  opts: { outWidth?: number; outHeight?: number; quality?: number } = {}
+): Promise<{ dataUri: string; width: number; height: number }> {
+  const MAX_W = opts.outWidth || 1920
+  const MAX_H = opts.outHeight || 1080
+  const quality = opts.quality ?? 0.82
+  // 等 loadedmetadata 确保尺寸可读
+  if (!videoEl.videoWidth) {
+    await new Promise<void>((resolve, reject) => {
+      const done = () => resolve()
+      videoEl.addEventListener('loadedmetadata', done, { once: true })
+      setTimeout(() => { videoEl.removeEventListener('loadedmetadata', done); resolve() }, 1500)
+    })
+  }
+  const vw = videoEl.videoWidth || 1280
+  const vh = videoEl.videoHeight || 720
+  const ratio = Math.min(MAX_W / vw, MAX_H / vh, 1) // 不放大
+  const w = Math.round(vw * ratio)
+  const h = Math.round(vh * ratio)
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(videoEl, 0, 0, w, h)
+  const dataUri = canvas.toDataURL('image/jpeg', quality)
+  return { dataUri, width: w, height: h }
+}
+
+// 记忆源优先级：settings.rememberedCapture（Electron 同步） → localStorage 兜底 → 空
+const rememberedSourceId = ref<string>('')
+const initCaptureSourceId = () => {
+  const fromSettings = settings.value?.rememberedCapture?.sourceId
+  if (fromSettings) { rememberedSourceId.value = fromSettings; return }
+  const fromLs = localStorage.getItem('notestar-capture-source') || ''
+  if (fromLs) rememberedSourceId.value = fromLs
+}
+// Day 3 P0-V2：注册 display-media 自定义选择器请求（主进程拦截 Chromium 原生弹窗后转过来的）
+let offDisplayMediaReq: (() => void) | null = null
+function initDisplayMediaBridge() {
+  const noteAPI = (window as any).noteAPI
+  if (!isElectron || !noteAPI || typeof noteAPI.onDisplayMediaRequest !== 'function') return
+  offDisplayMediaReq = noteAPI.onDisplayMediaRequest(async (payload: any) => {
+    const reqId = payload?.reqId
+    if (!reqId) return
+    pendingDisplayMediaReqId.value = reqId
+    // 1) 有记忆的 sourceId → 立即 reply（完全不弹 picker，省用户一步）
+    if (rememberedSourceId.value) {
+      try {
+        await noteAPI.displayMediaReply({ reqId, streamId: rememberedSourceId.value, remember: true })
+        pendingDisplayMediaReqId.value = null
+        return
+      } catch (_) { /* fallthrough picker */ }
+    }
+    // 2) 没记忆 → 自动打开卡片 picker（用户点卡片 → pickCaptureSource 里会按 pending 模式 reply）
+    openCapturePicker()
+  })
+}
+onMounted(() => {
+  initCaptureSourceId()
+  initDisplayMediaBridge()
+})
+onUnmounted(() => { try { offDisplayMediaReq && offDisplayMediaReq() } catch (_) {} })
+
+// 记住所选截图源（双写：settings.json + localStorage，防止一边丢）
+async function rememberCaptureSource(sourceId: string, sourceName: string) {
+  rememberedSourceId.value = sourceId
+  localStorage.setItem('notestar-capture-source', sourceId)
+  try {
+    await saveSettings({ ...settings.value, rememberedCapture: { sourceId, sourceName } })
+  } catch (_) { /* ignore */ }
+}
+
+// 旧兜底：主进程 desktopCapturer（在 Canvas 截流失败或用户取消 getDisplayMedia 时回退）
+async function fallbackQuickCaptureDesktopCapturer() {
+  const shot = await captureScreen(
+    rememberedSourceId.value ? { sourceId: rememberedSourceId.value } : { mode: 'foreground' }
+  )
+  if ((shot as any).needsPicker) {
+    showToast((shot as any).reason === 'source_not_found'
+      ? '记忆的视频窗口已关闭，请重新选择'
+      : '请选择要截取的视频窗口', 'warn')
+    openCapturePicker()
+    return null
+  }
+  if ((shot as any).sourceId && shot.name) rememberCaptureSource((shot as any).sourceId, shot.name).catch(() => {})
+  return shot
+}
+
+// 一键截屏（Day 2 新主路径）：优先 Canvas 截 displayMedia（<50ms）→ 失败/取消 → 回退主进程 desktopCapturer
 const quickCapture = async () => {
   if (!isElectron) {
     showAlert('截屏', '仅桌面版支持截屏功能')
     return
   }
   try {
-    const shot = await captureScreen(
-      rememberedSourceId.value ? { sourceId: rememberedSourceId.value } : { mode: 'foreground' }
-    )
-    await insertImageRef(shot.dataUri, `视频截图_${Date.now()}`)
-    frontendLogger.info('NoteOrganize', '一键截屏完成', { name: shot.name })
+    let dataUri: string
+    let name = '视频截图'
+    // 1) 优先：前端 Canvas 截帧（速度 <50ms，且让用户通过 Chromium 原生共享选择器选窗口，不会截错）
+    try {
+      const { videoEl, label } = await acquireCaptureStream()
+      const frame = await captureFrameToJpeg(videoEl, { outWidth: 1920, outHeight: 1080, quality: 0.82 })
+      dataUri = frame.dataUri
+      if (label) name = label.replace(/ - Google Chrome$/, '').replace(/ - Microsoft Edge$/, '').trim() || '视频截图'
+      frontendLogger.info('NoteOrganize', '一键截屏完成（Canvas 截流）', { name, w: frame.width, h: frame.height })
+    } catch (streamErr: any) {
+      // 用户点 getDisplayMedia 弹窗的「取消」(NotAllowedError)，不用展示错误，静默回退
+      const name2 = String(streamErr?.name || '')
+      if (name2 === 'NotAllowedError' || name2 === 'NotFoundError') {
+        frontendLogger.info('NoteOrganize', '用户取消了 getDisplayMedia 选择器，退回 desktopCapturer 兜底')
+      } else {
+        frontendLogger.warn('NoteOrganize', 'Canvas 截流失败，退回 desktopCapturer 兜底', streamErr)
+      }
+      const shot = await fallbackQuickCaptureDesktopCapturer()
+      if (!shot) return  // needsPicker 时 fallback 内部已弹 toast + openCapturePicker
+      dataUri = shot.dataUri
+      name = shot.name
+    }
+    // 2) 统一插入图片
+    await insertImageRef(dataUri, `视频截图_${Date.now()}`)
   } catch (e: any) {
-    showAlert('截屏失败', e.message || '无法截取屏幕，请检查窗口是否最小化')
+    showAlert('截屏失败', e?.message || '无法截取屏幕，请检查窗口是否最小化')
   }
 }
 
@@ -1468,13 +1758,41 @@ const openCapturePicker = async () => {
   }
 }
 
+const showCapturePicker = ref(false)
+const captureSources = ref<{ id: string; name: string; isScreen: boolean; thumbnail: string }[]>([])
+// Day 3 P0-V2：setDisplayMediaRequestHandler 请求的 reqId（getDisplayMedia 自定义 picker 的回调标识）
+const pendingDisplayMediaReqId = ref<string | null>(null)
+
+// 关闭 picker 时若有 pending 的 display-media 请求 → reply 空（=取消 → Chromium 抛 NotAllowedError，我们的 Canvas 截帧逻辑自动回退 desktopCapturer）
+function closeCapturePickerWithCancelReply() {
+  showCapturePicker.value = false
+  const rid = pendingDisplayMediaReqId.value
+  if (!rid) return
+  pendingDisplayMediaReqId.value = null
+  try { (window as any).noteAPI?.displayMediaReply({ reqId: rid, streamId: '' }) } catch (_) {}
+}
+// 自定义 picker open 时顺便把 overlay 的 cancel 绑定到 reply
+// （模板里 modal-overlay 取消按钮直接调这个函数）
+
 // 选定截屏目标并立即截图插入，记住该窗口
 const pickCaptureSource = async (s: { id: string; name: string }) => {
   showCapturePicker.value = false
-  rememberedSourceId.value = s.id
-  localStorage.setItem('notestar-capture-source', s.id)
+  await rememberCaptureSource(s.id, s.name)
+  // Day 3：如果这次 picker 是由 display-media 请求打开的 → reply streamId 给 getDisplayMedia，不再走 captureScreen（用户要的是 MediaStream 不是直接截图）
+  const rid = pendingDisplayMediaReqId.value
+  if (rid) {
+    pendingDisplayMediaReqId.value = null
+    try { await (window as any).noteAPI?.displayMediaReply({ reqId: rid, streamId: s.id, remember: true }) } catch (_) {}
+    showToast('✓ 已选择：' + s.name.slice(0, 40))
+    return
+  }
   try {
     const shot = await captureScreen({ sourceId: s.id })
+    // 兼容 picker 选的源不存在（极端情况下窗口刚好关了）→ needsPicker 再提示
+    if ((shot as any).needsPicker) {
+      showToast('该窗口已不存在，请重新选择', 'warn')
+      return
+    }
     await insertImageRef(shot.dataUri, `截图_${Date.now()}`)
   } catch (e: any) {
     showAlert('截屏失败', e.message || '无法截取该窗口')
@@ -1551,6 +1869,7 @@ const handleNewNoteShortcut = () => {
 
 // 每 30 秒自动保存一次
 onMounted(() => {
+  loadFollowSessions()
   autoSaveTimer = setInterval(autoSave, 30000)
   // 监听全局 Ctrl+S 快捷键
   window.addEventListener('notestar:save', autoSave)
@@ -1559,6 +1878,8 @@ onMounted(() => {
   // Ctrl+K 聚焦搜索框
   window.addEventListener('keydown', handleGlobalKeys)
   window.addEventListener('notestar:focus-search', handleFocusSearch)
+  // 关键修复：notes 变动（含跟拍 finishSession 写 meta.json 后）立刻刷新 sessions
+  try { (window as any).noteAPI?.onNotesChanged?.(() => loadFollowSessions()) } catch (_) {}
 })
 
 onUnmounted(() => {
@@ -1588,9 +1909,72 @@ const deleteCurrent = async () => {
   }
 }
 
+// ========== 笔记批量操作 ==========
+const batchMode = ref(false)
+const selectedIds = ref<Set<string>>(new Set())
+const batchCourseId = ref('')
+const toggleBatchMode = () => {
+  batchMode.value = !batchMode.value
+  if (!batchMode.value) { selectedIds.value = new Set(); batchCourseId.value = '' }
+}
+const toggleSelect = (id: string) => {
+  const s = new Set(selectedIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  selectedIds.value = s
+}
+const toggleSelectAll = () => {
+  const ids = filteredNotes.value.map(n => n.id)
+  const s = new Set(selectedIds.value)
+  const allSelected = ids.length > 0 && ids.every(id => s.has(id))
+  if (allSelected) ids.forEach(id => s.delete(id))
+  else ids.forEach(id => s.add(id))
+  selectedIds.value = s
+}
+const batchMoveCourse = async () => {
+  if (!batchCourseId.value || !selectedIds.value.size) return
+  for (const id of selectedIds.value) {
+    const n = notes.value.find(x => x.id === id)
+    if (n) await updateNote({ ...n, courseId: batchCourseId.value })
+  }
+  selectedIds.value = new Set()
+  batchCourseId.value = ''
+}
+const batchDelete = async () => {
+  if (!selectedIds.value.size) return
+  const ok = await showConfirm('批量删除', `确定要删除选中的 ${selectedIds.value.size} 篇笔记吗？\n\n删除后将移入回收站，30 天内可恢复。`)
+  if (!ok) return
+  for (const id of selectedIds.value) await removeNote(id)
+  selectedIds.value = new Set()
+  refreshDeletedNotes()
+}
+
+// ========== 相关笔记（自动双链：标签 + 标题关键词相似度，本地计算） ==========
+const extractKeywords = (title: string) => new Set(
+  (title || '').replace(/[，。、；：？！,.!?·\-_()（）]/g, ' ').split(/\s+/).filter(w => w.length > 1)
+)
+const relatedNotes = computed(() => {
+  const cur = currentNote.value
+  if (!cur?.id) return []
+  const curTags = new Set(cur.tags || [])
+  const curWords = extractKeywords(cur.title)
+  return notes.value
+    .filter(n => n.id !== cur.id && !n.deletedAt)
+    .map(n => {
+      let score = 0
+      if (curTags.size) score += (n.tags || []).filter(t => curTags.has(t)).length * 3
+      const nWords = extractKeywords(n.title)
+      score += [...nWords].filter(w => curWords.has(w)).length * 2
+      return { note: n, score }
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map(x => x.note)
+})
+const getCourseName = (cid: string) => courses.value.find(c => c.id === cid)?.name || ''
+
 // ========== 笔记导出 ==========
-const doExportNote = async (format: 'md' | 'html') => {
-  if (!currentNote.value?.id) return
+const doExportNote = async (format: 'md' | 'html') => {  if (!currentNote.value?.id) return
   try {
     // HTML 导出附带 AI 分析结果（当前笔记的分析/缓存），生成排版+图表
     const analysisMap: Record<string, NoteAnalysis> = {}
@@ -2116,6 +2500,39 @@ onMounted(() => {
   }
 })
 
+// 通过 store.pendingNoteOpen 接收后台新建笔记的跳转指令（App.vue 全局接广播后存这里）
+// - 用 watch immediate：如果 NoteOrganize 已经挂载（用户在 /organize），收到后立刻生效
+// - 如果 NoteOrganize 刚挂载（路由刚切过来），App.vue 已把 id 写入 pendingNoteOpen，immediate 立刻触发消费
+watch(pendingNoteOpen, async (noteId) => {
+  if (!noteId) return
+  try {
+    frontendLogger.info('NoteOrganize', '收到 pendingNoteOpen 指令准备选中', { noteId, notesCount: notes.value?.length })
+    // 清筛选（否则可能被过滤掉看不到目标笔记）
+    selectedCourse.value = 'all'
+    searchQuery.value = ''
+    // 找不到目标笔记 → 主动全量刷新一次（保证 saveNote 刚写入也能看到）
+    let target = (notes.value || []).find((n: Note) => n.id === noteId)
+    if (!target) {
+      try { await loadAllData(); target = (notes.value || []).find((n: Note) => n.id === noteId) } catch (_) {}
+    }
+    if (target) {
+      selectNote(target)
+      nextTick(() => {
+        const ta = document.getElementById('editor-textarea') as HTMLTextAreaElement | null
+        if (ta) { try { ta.focus(); ta.scrollTop = ta.scrollHeight } catch (_) {} }
+      })
+      frontendLogger.info('NoteOrganize', '已成功选中并跳转目标笔记', { noteId, title: target.title })
+    } else {
+      frontendLogger.warn('NoteOrganize', '找不到目标笔记 id，跳转取消', { noteId })
+    }
+  } catch (e) {
+    frontendLogger.error('NoteOrganize', 'pendingNoteOpen 处理异常', e)
+  } finally {
+    // 消费完清掉，避免下次同一个 id 重复触发
+    pendingNoteOpen.value = null
+  }
+}, { immediate: true })
+
 watch(() => route.query.q, (q) => {
   if (q && typeof q === 'string') {
     searchQuery.value = q
@@ -2146,16 +2563,60 @@ onUnmounted(() => {
 .content-layer { position: relative; z-index: 1; width: 100%; height: 100%; display: flex; }
 
 /* 笔记列表 */
-.note-list-panel { width: 280px; height: 100%; display: flex; flex-direction: column; background: rgba(255,255,255,0.65); backdrop-filter: blur(10px); border-right: 1px solid rgba(255,192,213,0.35); flex-shrink: 0; }
-.search-bar { display: flex; gap: 8px; padding: 16px; }
-.search-input { flex: 1; height: 36px; padding: 0 14px; background: rgba(255,255,255,0.85); border: 1.5px solid rgba(255,192,213,0.5); border-radius: var(--radius-pill); font-size: 13px; color: var(--color-text); outline: none; transition: all 0.2s; }
+.note-list-panel {
+  width: 280px; height: 100%; display: flex; flex-direction: column;
+  background: color-mix(in srgb, var(--color-bg-card) 94%, var(--color-pink-light) 6%);
+  border-right: 1px solid color-mix(in srgb, var(--color-border) 60%, var(--color-sakura) 40%);
+  flex-shrink: 0;
+}
+.search-bar { display: flex; gap: 6px; padding: 10px 12px; flex-wrap: wrap; align-items: center; row-gap: 8px; }
+
+/* 批量操作栏 */
+.batch-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px 10px; border-bottom: 1px solid var(--color-border);
+}
+.batch-btn {
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px;
+  border: 1px solid var(--color-border); background: rgba(255,255,255,0.05);
+  color: var(--color-text); cursor: pointer;
+}
+.batch-btn:hover:not(:disabled) { border-color: var(--color-pink); color: var(--color-pink); }
+.batch-btn.danger { border-color: rgba(231,76,60,0.35); color: #e74c3c; }
+.batch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.batch-course {
+  font-size: 11px; padding: 4px 8px; border-radius: 8px;
+  border: 1px solid var(--color-border); background: var(--color-card);
+  color: var(--color-text);
+}
+.note-card.batch { cursor: default; }
+.note-check {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  width: 16px; height: 16px; accent-color: var(--color-pink); cursor: pointer;
+}
+.search-input { flex: 1 1 100%; height: 30px; padding: 0 12px; background: var(--color-bg-input); border: 1.5px solid color-mix(in srgb, var(--color-sakura) 55%, transparent); border-radius: var(--radius-pill); font-size: var(--fs-sm); color: var(--color-text); outline: none; transition: all var(--dur-fast); }
+.search-input::placeholder { color: var(--color-text-muted); font-size: 11px; }
 .search-input:focus { border-color: var(--color-pink); box-shadow: var(--shadow-glow); }
-.new-note-btn { height: 36px; padding: 0 16px; background: var(--gradient-pink-purple); color: white; border: none; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; box-shadow: 0 3px 10px rgba(255,107,157,0.25); transition: all 0.2s; }
+.new-note-btn {
+  height: 30px; padding: 0 10px;
+  background: var(--gradient-pink-purple); color: white; border: none;
+  border-radius: var(--radius-pill); font-size: 11.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(255,107,157,0.22);
+  transition: all var(--dur-fast);
+  display: inline-flex; align-items: center; gap: 3px;
+  flex: 1 1 0; min-width: 0;
+}
 .new-note-btn:hover { opacity: 0.92; transform: translateY(-1px); }
-.new-note-btn:active { transform: scale(0.95); }
-/* 左侧列表的"导入"按钮（次要样式，突出"新建"主按钮） */
-.new-note-btn.plain { background: rgba(183,148,246,0.14); color: #7A5AF8; border: 1px solid rgba(183,148,246,0.4); box-shadow: none; }
-.new-note-btn.plain:hover { background: rgba(183,148,246,0.22); }
+.new-note-btn:active { transform: scale(0.96); }
+/* 左侧列表的"导入/批量"按钮（次要样式，突出"新建"主按钮） */
+.new-note-btn.plain {
+  background: color-mix(in srgb, var(--color-bg-card) 85%, var(--color-purple-light) 15%);
+  color: #7A5AF8;
+  border: 1px solid color-mix(in srgb, var(--color-purple) 40%, transparent);
+  box-shadow: none;
+}
+.new-note-btn.plain:hover { background: var(--color-purple-light); }
 
 .filter-tabs { display: flex; gap: 4px; padding: 0 16px 12px; flex-wrap: wrap; }
 .filter-tab { height: 26px; padding: 0 12px; background: transparent; border: 1px solid rgba(255,192,213,0.45); border-radius: var(--radius-pill); font-size: 11px; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
@@ -2199,18 +2660,24 @@ onUnmounted(() => {
 .editor-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--color-border); flex-wrap: wrap; }
 .editor-title { flex: 1; min-width: 160px; height: 34px; font-size: 18px; font-weight: 700; color: var(--color-text); background: transparent; border: none; outline: none; }
 .editor-title::placeholder { color: var(--color-text-muted); }
-.editor-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.editor-btn { height: 30px; padding: 0 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; border: none; white-space: nowrap; line-height: 1; display: inline-flex; align-items: center; }
-.editor-btn.import { background: rgba(183,148,246,0.12); color: #7A5AF8; border: 1px solid rgba(183,148,246,0.35); }
-.editor-btn.import:hover { background: rgba(183,148,246,0.2); }
+.editor-actions { display: flex; align-items: center; gap: 6px; row-gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-content: center; min-height: 32px; }
+.editor-btn { height: 32px; padding: 0 14px; border-radius: var(--radius-sm); font-size: var(--fs-md); font-weight: var(--fw-semibold); cursor: pointer; border: none; white-space: nowrap; line-height: 1; display: inline-flex; align-items: center; gap: 4px; }
+.editor-btn.import { background: color-mix(in srgb, var(--color-bg-card) 82%, var(--color-purple-light) 18%); color: #7A5AF8; border: 1px solid color-mix(in srgb, var(--color-purple) 40%, transparent); }
+.editor-btn.import:hover { background: var(--color-purple-light); }
+.editor-btn.review { background: color-mix(in srgb, var(--color-bg-card) 82%, var(--color-pink-light) 18%); color: var(--color-pink); border: 1px solid color-mix(in srgb, var(--color-pink) 36%, transparent); }
+.editor-btn.review:hover { background: var(--color-pink-light); }
 .editor-btn.save { background: var(--gradient-pink-purple); color: white; }
 .editor-btn.save:disabled { opacity: 0.4; cursor: not-allowed; }
-.editor-btn.save:not(:disabled):hover { opacity: 0.9; }
-.editor-btn.ai { background: rgba(66,146,245,0.1); color: #4292F5; border: 1px solid rgba(66,146,245,0.3); }
+.editor-btn.save:not(:disabled):hover { opacity: 0.92; transform: translateY(-1px); }
+.editor-btn.ai { background: color-mix(in srgb, var(--color-bg-card) 88%, var(--color-blue-light) 12%); color: var(--color-info); border: 1px solid color-mix(in srgb, var(--color-blue) 38%, transparent); }
 .editor-btn.ai:disabled { opacity: 0.5; }
-.editor-btn.ai:hover:not(:disabled) { background: rgba(66,146,245,0.15); }
-.editor-btn.danger { background: transparent; color: #e74c3c; border: 1px solid #e74c3c33; }
-.editor-btn.danger:hover { background: #e74c3c0f; }
+.editor-btn.ai:hover:not(:disabled) { background: var(--color-blue-light); }
+.editor-btn.expand { background: color-mix(in srgb, var(--color-bg-card) 82%, var(--color-purple-light) 18%); color: #7A5AF8; border: 1px solid color-mix(in srgb, var(--color-purple) 40%, transparent); }
+.editor-btn.expand:hover:not(:disabled) { background: var(--color-purple-light); }
+.editor-btn.export { background: color-mix(in srgb, var(--color-bg-card) 85%, var(--color-blue-light) 15%); color: var(--color-info); border: 1px solid color-mix(in srgb, var(--color-blue) 30%, transparent); }
+.editor-btn.export:hover { background: var(--color-blue-light); }
+.editor-btn.danger { background: transparent; color: var(--color-danger); border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent); }
+.editor-btn.danger:hover { background: color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-card) 90%); border-color: color-mix(in srgb, var(--color-danger) 55%, transparent); }
 
 .editor-tags { display: flex; align-items: center; gap: 6px; padding: 0 24px 8px; flex-wrap: wrap; }
 .tag-chip { display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; background: var(--color-pink-light); border-radius: var(--radius-pill); font-size: 11px; color: var(--color-pink); }
@@ -2220,17 +2687,29 @@ onUnmounted(() => {
 .tag-input:focus { border-color: var(--color-pink); border-style: solid; }
 
 .editor-course-select { display: flex; align-items: center; gap: 8px; padding: 0 24px 8px; font-size: 12px; color: var(--color-text-secondary); }
-.editor-course-select select { height: 28px; padding: 0 8px; background: var(--color-bg-soft); border: 1px solid var(--color-border); border-radius: 4px; font-size: 12px; color: var(--color-text); outline: none; }
-.add-course-btn { height: 28px; padding: 0 10px; background: none; border: 1px dashed var(--color-border); border-radius: 4px; font-size: 11px; color: var(--color-text-tertiary); cursor: pointer; }
-.add-course-btn:hover { border-color: var(--color-pink); color: var(--color-pink); }
+.editor-course-select select { height: 32px; padding: 0 12px; background: var(--color-bg-input); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: var(--fs-md); color: var(--color-text); outline: none; }
+.editor-course-select select:hover { border-color: var(--color-pink); }
+.editor-course-select select:focus-visible { box-shadow: var(--shadow-focus-ring); }
+.add-course-btn { height: 32px; padding: 0 14px; background: none; border: 1px dashed var(--color-border); border-radius: var(--radius-sm); font-size: var(--fs-md); color: var(--color-text-tertiary); cursor: pointer; font-weight: var(--fw-medium); }
+.add-course-btn:hover { border-color: var(--color-pink); color: var(--color-pink); background: var(--color-pink-light-2); }
 
 .editor-body { flex: 1; padding: 14px 20px; background: transparent; border: none; outline: none; resize: none; font-size: 14px; line-height: 1.8; color: var(--color-text); font-family: inherit; }
 .editor-body::placeholder { color: var(--color-text-muted); }
 
 .editor-preview { flex: 1; padding: 14px 20px; overflow-y: auto; font-size: 14px; line-height: 1.8; color: var(--color-text); }
+/* 预览区图片自适应宽度，防止大图超出 */
+.editor-preview :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 8px 0;
+  object-fit: contain;
+}
 
 /* TTS 朗读控制条 */
 .tts-bar { display: flex; align-items: center; gap: 8px; padding: 6px 20px 8px; flex-wrap: wrap; }
+.note-audio-bar { width: calc(100% - 40px); margin: 0 20px 10px; height: 34px; border-radius: 8px; }
 .tts-btn {
   display: inline-flex; align-items: center; gap: 5px;
   height: 26px; padding: 0 12px;
@@ -2261,16 +2740,16 @@ onUnmounted(() => {
 }
 
 .editor-mode-tabs { display: flex; gap: 4px; padding: 0 20px 8px; align-items: center; }
-.mode-tab { height: 26px; padding: 0 12px; background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 11px; color: var(--color-text-secondary); cursor: pointer; }
-.mode-tab.active { background: var(--color-pink-light); border-color: var(--color-pink); color: var(--color-pink); font-weight: 600; }
-.mode-tab.img-btn { display: flex; align-items: center; gap: 4px; margin-left: auto; color: var(--color-text-tertiary); }
-.mode-tab.img-btn:hover { border-color: var(--color-pink); color: var(--color-pink); }
+.mode-tab { height: 32px; padding: 0 14px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: var(--fs-md); color: var(--color-text-secondary); cursor: pointer; font-weight: var(--fw-medium); }
+.mode-tab.active { background: var(--color-pink-light); border-color: var(--color-pink); color: var(--color-pink); font-weight: var(--fw-semibold); }
+.mode-tab.img-btn { display: flex; align-items: center; gap: 4px; margin-left: auto; color: var(--color-text-tertiary); background: transparent; }
+.mode-tab.img-btn:hover { border-color: var(--color-pink); color: var(--color-pink); background: var(--color-pink-light-2); }
 
 /* 一键截屏 */
-.capture-group { display: flex; align-items: center; border: 1px solid rgba(255,107,157,0.35); border-radius: 6px; overflow: hidden; }
-.capture-group .capture-btn { margin-left: 0; border: none; border-radius: 0; height: 24px; }
+.capture-group { display: flex; align-items: stretch; border: 1px solid rgba(255,107,157,0.4); border-radius: var(--radius-sm); overflow: hidden; height: 32px; }
+.capture-group .capture-btn { margin-left: 0; border: none; border-radius: 0; height: 32px; padding: 0 12px; background: rgba(255,107,157,0.06); font-size: var(--fs-md); color: var(--color-pink); font-weight: var(--fw-semibold); display: inline-flex; align-items: center; gap: 4px; }
 .capture-group .capture-btn:hover { background: var(--color-pink-light); }
-.capture-arrow { width: 18px; height: 24px; background: rgba(255,107,157,0.08); border: none; border-left: 1px solid rgba(255,107,157,0.25); color: var(--color-pink); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.capture-arrow { width: 24px; height: 32px; background: rgba(255,107,157,0.12); border: none; border-left: 1px solid rgba(255,107,157,0.28); color: var(--color-pink); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .capture-arrow:hover { background: var(--color-pink-light); }
 
 /* 截屏选择面板 */
@@ -2285,15 +2764,24 @@ onUnmounted(() => {
 .capture-name { display: block; padding: 7px 10px; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 字号调节 */
-.font-size-control { display: flex; align-items: center; gap: 2px; margin-left: 8px; background: var(--color-bg-soft); border: 1px solid var(--color-border); border-radius: 6px; padding: 1px 4px; }
-.font-size-btn { width: 22px; height: 20px; background: none; border: none; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); cursor: pointer; line-height: 1; border-radius: 4px; }
+.font-size-control { display: flex; align-items: center; gap: 2px; margin-left: 8px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-sm); height: 32px; padding: 2px 4px; }
+.font-size-btn { width: 26px; height: 28px; background: none; border: none; font-size: var(--fs-md); font-weight: 700; color: var(--color-text-secondary); cursor: pointer; line-height: 1; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
 .font-size-btn:hover { background: var(--color-pink-light); color: var(--color-pink); }
-.font-size-val { font-size: 10px; color: var(--color-text-muted); min-width: 30px; text-align: center; }
+.font-size-val { font-size: 10px; color: var(--color-text-muted); min-width: 32px; text-align: center; padding: 0 4px; }
 
-/* Markdown 工具栏 */
-.editor-footer { display: flex; align-items: center; gap: 12px; padding: 8px 24px; border-top: 1px solid var(--color-border); font-size: 11px; color: var(--color-text-muted); }
-.unsaved { color: #e74c3c; }
-.saved { color: #26D0A8; }
+/* 页脚状态条（强化可读性，不再灰底看不清） */
+.editor-footer {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-sm);
+  color: var(--color-text-tertiary);
+  background: color-mix(in srgb, var(--color-bg-card) 92%, var(--color-pink-light) 8%);
+}
+.editor-footer .unsaved { color: var(--color-danger); font-weight: var(--fw-semibold); }
+.editor-footer .saved { color: var(--color-success); font-weight: var(--fw-semibold); }
+.editor-footer .footer-sep { opacity: 0.4; }
+.editor-footer .footer-spacer { flex: 1; }
 
 /* 无选中状态 */
 .no-selection { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
@@ -2306,13 +2794,41 @@ onUnmounted(() => {
 .no-sel-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 
 /* 右侧大纲 + 知识分析面板 */
-.outline-panel { width: 330px; height: 100%; display: flex; flex-direction: column; padding: 18px 16px; background: rgba(255,255,255,0.6); border-left: 1px solid var(--color-border); flex-shrink: 0; overflow-y: auto; }
+.outline-panel {
+  width: 330px; height: 100%;
+  display: flex; flex-direction: column;
+  padding: 18px 16px;
+  /* 去掉半透后改用实底 + 深粉边，避免合成子像素模糊 */
+  background: color-mix(in srgb, var(--color-bg-card) 94%, var(--color-pink-light) 6%);
+  border-left: 1px solid color-mix(in srgb, var(--color-border) 60%, var(--color-sakura) 40%);
+  flex-shrink: 0; overflow-y: auto;
+}
 .outline-header { margin-bottom: 12px; }
 .outline-tabs { display: flex; gap: 4px; }
-.outline-tab { flex: 1; height: 30px; background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 12px; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-.outline-tab.active { background: var(--color-pink-light); border-color: var(--color-pink); color: var(--color-pink); font-weight: 600; }
+.outline-tab {
+  flex: 1 1 0; min-width: 0;
+  height: 32px; padding: 0 8px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer; transition: all var(--dur-fast);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: var(--fw-medium);
+}
+.outline-tab.active { background: var(--color-pink-light); border-color: var(--color-pink); color: var(--color-pink); font-weight: var(--fw-semibold); }
 .cache-badge { display: inline-block; margin-left: 5px; padding: 1px 7px; border-radius: var(--radius-pill); background: rgba(38,208,168,0.14); border: 1px solid rgba(38,208,168,0.4); color: #26D0A8; font-size: 9px; font-weight: 700; vertical-align: 1px; }
 .outline-body { display: flex; flex-direction: column; gap: 6px; }
+.related-title { font-size: 11.5px; font-weight: 700; color: var(--color-purple); margin: 14px 0 4px; }
+.related-item {
+  display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; margin-bottom: 6px;
+  border-radius: 10px; background: rgba(183,148,246,0.07); border: 1px solid rgba(183,148,246,0.18);
+  cursor: pointer; transition: all 0.15s;
+}
+.related-item:hover { border-color: var(--color-purple); background: rgba(183,148,246,0.14); }
+.related-name { font-size: 12px; font-weight: 600; color: var(--color-text); }
+.related-meta { font-size: 10px; color: var(--color-text-tertiary); }
 .outline-item { font-size: 12.5px; color: var(--color-text-secondary); padding: 6px 0 6px 12px; border-left: 2px solid var(--color-border); line-height: 1.5; }
 .outline-item.heading { font-weight: 600; color: var(--color-text); border-left-color: var(--color-pink); }
 .outline-empty { font-size: 12px; color: var(--color-text-muted); text-align: center; padding: 20px 0; }
@@ -2431,7 +2947,7 @@ onUnmounted(() => {
 .deeper-text { font-size: 12px; color: var(--color-text); line-height: 1.5; }
 
 /* 模态框 */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .modal-box { background: white; border-radius: 16px; padding: 28px; width: 520px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); position: relative; z-index: 10000; }
 .modal-box.small { width: 380px; }
 .modal-title { font-size: 18px; font-weight: 700; color: var(--color-text); margin-bottom: 8px; }

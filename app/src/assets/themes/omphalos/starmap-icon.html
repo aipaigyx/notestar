@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>✦ 星轨航图 · 翁法罗斯动态图标</title>
+<style>
+  :root {
+    --gold-100:#FFF5D6; --gold-300:#FCE3A0; --gold-400:#F5D472;
+    --gold-500:#E0B453; --gold-700:#C49A45;
+    --cyan-300:#7DD3E8; --cyan-500:#4FA8C5; --cyan-700:#2A6E8E;
+    --mint:#5EEAD4; --pink:#FF9AC9; --purple:#C896FF;
+    --space-950:#050715; --space-900:#0B1A4A; --space-700:#1A2B6B;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; }
+  body {
+    background: radial-gradient(ellipse at center, #0A0E27 0%, #050715 70%, #02030A 100%);
+    color:#E0E2FF;
+    font-family:-apple-system,'PingFang SC',system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stage {
+    width: min(86vmin, 720px);
+    aspect-ratio:1/1;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  svg { width:100%; height:100%; overflow:visible; display:block; }
+
+  /* ===== Animations ===== */
+  .gear-spin   { transform-origin:200px 200px; animation: rot 28s linear infinite; }
+  @keyframes rot { to { transform: rotate(-360deg); } }
+
+  .halo-breath { transform-origin:200px 200px; animation: hb 5s ease-in-out infinite; }
+  @keyframes hb { 0%,100% { opacity:.55; transform: scale(.92); } 50% { opacity:1; transform: scale(1.05); } }
+
+  .halo-gold   { transform-origin:200px 200px; animation: hb 4s ease-in-out infinite; }
+
+  .p { transform-box:fill-box; transform-origin:center; animation: drift 6s ease-out infinite; }
+  .p2 { animation-duration:7s;  animation-delay:1s; }
+  .p3 { animation-duration:5s;  animation-delay:2.2s; }
+  .p4 { animation-duration:8s;  animation-delay:.6s; }
+  .p5 { animation-duration:6.5s; animation-delay:3.4s; }
+  .p6 { animation-duration:7.5s; animation-delay:2s; }
+  .p7 { animation-duration:5.5s; animation-delay:4s; }
+  .p8 { animation-duration:6s;  animation-delay:1.5s; }
+  @keyframes drift {
+    0%   { opacity:0; transform: translate(0,0) scale(.6); }
+    15%  { opacity:1; }
+    80%  { opacity:.6; }
+    100% { opacity:0; transform: translate(var(--dx,30px), var(--dy,-30px)) scale(.2); }
+  }
+
+  /* 莫比乌斯环：横向固定，不旋转、不俯仰。仅保留光带自身纹理的流动（呼吸感） */
+  .mobius-light, .mobius-shadow { stroke-dasharray: 22 6; animation: flow 3s linear infinite; }
+  .mobius-shadow { animation-direction:reverse; animation-duration:3.6s; }
+  @keyframes flow { to { stroke-dashoffset:-28; } }
+
+  /* ===== 中心星芒：一闪一闪的 sparkle（spike star）===== */
+  /* 4 道主光尖：拉长闪烁（错峰，每条 0.12s） */
+  .spike { transform-box: fill-box; transform-origin: center; animation: spikeFlash 1.4s ease-in-out infinite; }
+  .spike.s2 { animation-delay:.12s; }
+  .spike.s3 { animation-delay:.24s; }
+  .spike.s4 { animation-delay:.36s; }
+  @keyframes spikeFlash {
+    0%, 100% { opacity:.3;  transform: scale(.55); filter: brightness(.8); }
+    18%      { opacity:1;   transform: scale(1.4); filter: brightness(1.7); }
+    40%      { opacity:.85; transform: scale(1);   filter: brightness(1.2); }
+    70%      { opacity:.5;  transform: scale(.75); }
+  }
+
+  /* 4 道副光尖（斜角，更细更短，错峰 0.15s） */
+  .spike-sub { transform-box: fill-box; transform-origin: center; animation: subFlash 1.4s ease-in-out infinite; }
+  .spike-sub.ss2 { animation-delay:.15s; }
+  .spike-sub.ss3 { animation-delay:.30s; }
+  .spike-sub.ss4 { animation-delay:.45s; }
+  @keyframes subFlash {
+    0%, 100% { opacity:.25; transform: scale(.4); }
+    25%      { opacity:.95; transform: scale(1.1); filter: brightness(1.5); }
+    55%      { opacity:.7;  transform: scale(.85); }
+  }
+
+  /* 中央光点呼吸 */
+  .star-core { transform-origin:200px 200px; animation: corePulse 1.4s ease-in-out infinite; }
+  @keyframes corePulse {
+    0%,100% { transform:scale(1);   opacity:1; filter: brightness(1.1); }
+    50%     { transform:scale(1.35); opacity:1; filter: brightness(1.6); }
+  }
+
+  /* 整体星芒容器轻微抖动（错开 scale） */
+  .star-burst { transform-origin:200px 200px; animation: burstSpin 1.4s ease-in-out infinite; }
+  @keyframes burstSpin {
+    0%,100% { transform: rotate(0deg) scale(1); }
+    50%     { transform: rotate(6deg) scale(1.05); }
+  }
+
+  .core-aura { transform-origin:200px 200px; animation: ab 3s ease-in-out infinite; }
+  @keyframes ab { 0%,100% { opacity:.4; transform:scale(1); } 50% { opacity:.9; transform:scale(1.2); } }
+
+  /* 莫比乌斯环双层辉光（CSS drop-shadow 模拟，比 SVG filter blur 性能好） */
+  .mobius-wrap {
+    filter:
+      drop-shadow(0 0 4px #C896FF)
+      drop-shadow(0 0 10px rgba(143, 181, 255, .75))
+      drop-shadow(0 0 18px rgba(200, 150, 255, .35));
+    transition: filter 400ms ease-out;
+  }
+
+  .stage:hover .gear-spin,
+  .stage:hover .mobius-light,
+  .stage:hover .mobius-shadow,
+  .stage:hover .halo-aura-static,
+  .stage:hover .star-burst,
+  .stage:hover .star-core,
+  .stage:hover .core-aura,
+  .stage:hover .halo-breath { filter: brightness(1.35) saturate(1.2); }
+
+  /* 莫比乌斯环悬停 → 辉光升档（覆盖默认 filter） */
+  .stage:hover .mobius-wrap {
+    filter:
+      drop-shadow(0 0 6px  #FF9AC9)
+      drop-shadow(0 0 14px #C896FF)
+      drop-shadow(0 0 26px rgba(143, 181, 255, .85))
+      drop-shadow(0 0 40px rgba(94, 234, 212, .45));
+  }
+
+  .stage.paused * { animation-play-state:paused !important; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration:0.001ms !important; animation-iteration-count:1 !important; }
+  }
+
+  .meta { position:fixed; top:20px; left:24px; color:#6F73A0; font-size:11px; letter-spacing:3px; }
+  .meta b { color:var(--gold); font-weight:600; letter-spacing:1px; }
+  .footer { position:fixed; bottom:22px; left:0; right:0; text-align:center; color:#6F73A0; font-size:11px; letter-spacing:4px; }
+  .footer span { color:var(--cyan-300); animation: blink 3s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
+</style>
+</head>
+<body>
+
+<div class="meta"><b>星轨航图</b> · ONFOREUS STAR SYSTEM · v1</div>
+
+<div class="stage" id="stage" title="点击暂停 / 悬停高亮">
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="mobiusGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#FF9AC9"/>
+    <stop offset="35%" stop-color="#C896FF"/>
+    <stop offset="70%" stop-color="#5EEAD4"/>
+    <stop offset="100%" stop-color="#7DD3E8"/>
+  </linearGradient>
+  <linearGradient id="mobiusShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#7B5BB8" stop-opacity=".55"/>
+    <stop offset="100%" stop-color="#2A6E8E" stop-opacity=".45"/>
+  </linearGradient>
+  <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#FCE3A0"/>
+    <stop offset="50%" stop-color="#F5D472"/>
+    <stop offset="100%" stop-color="#C49A45"/>
+  </linearGradient>
+  <radialGradient id="haloAura" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#7DD3E8" stop-opacity=".55"/>
+    <stop offset="50%" stop-color="#4FA8C5" stop-opacity=".3"/>
+    <stop offset="100%" stop-color="#1A2B6B" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".95"/>
+    <stop offset="35%" stop-color="#A8E8FF" stop-opacity=".7"/>
+    <stop offset="100%" stop-color="#4FA8C5" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FCE3A0" stop-opacity=".95"/>
+    <stop offset="60%" stop-color="#E0B453" stop-opacity=".5"/>
+    <stop offset="100%" stop-color="#C49A45" stop-opacity="0"/>
+  </radialGradient>
+
+  <!-- 复用符号：齿轮主刻度 / 次刻度 / 锚点 / 三角 -->
+  <line id="tk-main"  x1="200" y1="40" x2="200" y2="56" stroke="#FCE3A0" stroke-width="2"/>
+  <line id="tk-minor" x1="200" y1="40" x2="200" y2="48" stroke="#E0B453" stroke-width="1.2"/>
+  <polygon id="anc-v" points="0,-12 5,0 0,12 -5,0"/>
+  <polygon id="anc-h" points="-12,0 0,-5 12,0 0,5"/>
+  <polygon id="tooth" points="0,-2 4,0 0,2 -4,0"/>
+</defs>
+
+<!-- A. 底层 -->
+<circle cx="200" cy="200" r="180" fill="#050715"/>
+
+<!-- B. 4 个锚点（固定） -->
+<g class="halo-gold"><circle cx="200" cy="22"  r="14" fill="url(#goldGlow)"/></g>
+<g class="halo-gold" style="animation-delay:.4s"><circle cx="378" cy="200" r="14" fill="url(#goldGlow)"/></g>
+<g class="halo-gold" style="animation-delay:.8s"><circle cx="200" cy="378" r="14" fill="url(#goldGlow)"/></g>
+<g class="halo-gold" style="animation-delay:1.2s"><circle cx="22"  cy="200" r="14" fill="url(#goldGlow)"/></g>
+
+<g transform="translate(200 22)">
+  <use href="#anc-v" fill="url(#goldGlow)"/>
+  <use href="#anc-v" fill="none" stroke="#FCE3A0" stroke-width="1.5"/>
+  <circle r="3" fill="#FFF5D6"/>
+</g>
+<g transform="translate(378 200)">
+  <use href="#anc-h" fill="url(#goldGlow)"/>
+  <use href="#anc-h" fill="none" stroke="#FCE3A0" stroke-width="1.5"/>
+  <circle r="3" fill="#FFF5D6"/>
+</g>
+<g transform="translate(200 378)">
+  <use href="#anc-v" fill="url(#goldGlow)"/>
+  <use href="#anc-v" fill="none" stroke="#FCE3A0" stroke-width="1.5"/>
+  <circle r="3" fill="#FFF5D6"/>
+</g>
+<g transform="translate(22 200)">
+  <use href="#anc-h" fill="url(#goldGlow)"/>
+  <use href="#anc-h" fill="none" stroke="#FCE3A0" stroke-width="1.5"/>
+  <circle r="3" fill="#FFF5D6"/>
+</g>
+
+<!-- C. 齿轮刻度环（28s 逆时针） -->
+<g class="gear-spin" opacity=".95">
+  <!-- 12 主刻度 (30° 间隔) -->
+  <use href="#tk-main"/>
+  <use href="#tk-main" transform="rotate(30 200 200)"/>
+  <use href="#tk-main" transform="rotate(60 200 200)"/>
+  <use href="#tk-main" transform="rotate(90 200 200)"/>
+  <use href="#tk-main" transform="rotate(120 200 200)"/>
+  <use href="#tk-main" transform="rotate(150 200 200)"/>
+  <use href="#tk-main" transform="rotate(180 200 200)"/>
+  <use href="#tk-main" transform="rotate(210 200 200)"/>
+  <use href="#tk-main" transform="rotate(240 200 200)"/>
+  <use href="#tk-main" transform="rotate(270 200 200)"/>
+  <use href="#tk-main" transform="rotate(300 200 200)"/>
+  <use href="#tk-main" transform="rotate(330 200 200)"/>
+
+  <!-- 60 次刻度 (6° 间隔) -->
+  <use href="#tk-minor" transform="rotate(6 200 200)"/>
+  <use href="#tk-minor" transform="rotate(12 200 200)"/>
+  <use href="#tk-minor" transform="rotate(18 200 200)"/>
+  <use href="#tk-minor" transform="rotate(24 200 200)"/>
+  <use href="#tk-minor" transform="rotate(36 200 200)"/>
+  <use href="#tk-minor" transform="rotate(42 200 200)"/>
+  <use href="#tk-minor" transform="rotate(48 200 200)"/>
+  <use href="#tk-minor" transform="rotate(54 200 200)"/>
+  <use href="#tk-minor" transform="rotate(66 200 200)"/>
+  <use href="#tk-minor" transform="rotate(72 200 200)"/>
+  <use href="#tk-minor" transform="rotate(78 200 200)"/>
+  <use href="#tk-minor" transform="rotate(84 200 200)"/>
+  <use href="#tk-minor" transform="rotate(96 200 200)"/>
+  <use href="#tk-minor" transform="rotate(102 200 200)"/>
+  <use href="#tk-minor" transform="rotate(108 200 200)"/>
+  <use href="#tk-minor" transform="rotate(114 200 200)"/>
+  <use href="#tk-minor" transform="rotate(126 200 200)"/>
+  <use href="#tk-minor" transform="rotate(132 200 200)"/>
+  <use href="#tk-minor" transform="rotate(138 200 200)"/>
+  <use href="#tk-minor" transform="rotate(144 200 200)"/>
+  <use href="#tk-minor" transform="rotate(156 200 200)"/>
+  <use href="#tk-minor" transform="rotate(162 200 200)"/>
+  <use href="#tk-minor" transform="rotate(168 200 200)"/>
+  <use href="#tk-minor" transform="rotate(174 200 200)"/>
+  <use href="#tk-minor" transform="rotate(186 200 200)"/>
+  <use href="#tk-minor" transform="rotate(192 200 200)"/>
+  <use href="#tk-minor" transform="rotate(198 200 200)"/>
+  <use href="#tk-minor" transform="rotate(204 200 200)"/>
+  <use href="#tk-minor" transform="rotate(216 200 200)"/>
+  <use href="#tk-minor" transform="rotate(222 200 200)"/>
+  <use href="#tk-minor" transform="rotate(228 200 200)"/>
+  <use href="#tk-minor" transform="rotate(234 200 200)"/>
+  <use href="#tk-minor" transform="rotate(246 200 200)"/>
+  <use href="#tk-minor" transform="rotate(252 200 200)"/>
+  <use href="#tk-minor" transform="rotate(258 200 200)"/>
+  <use href="#tk-minor" transform="rotate(264 200 200)"/>
+  <use href="#tk-minor" transform="rotate(276 200 200)"/>
+  <use href="#tk-minor" transform="rotate(282 200 200)"/>
+  <use href="#tk-minor" transform="rotate(288 200 200)"/>
+  <use href="#tk-minor" transform="rotate(294 200 200)"/>
+  <use href="#tk-minor" transform="rotate(306 200 200)"/>
+  <use href="#tk-minor" transform="rotate(312 200 200)"/>
+  <use href="#tk-minor" transform="rotate(318 200 200)"/>
+  <use href="#tk-minor" transform="rotate(324 200 200)"/>
+  <use href="#tk-minor" transform="rotate(336 200 200)"/>
+  <use href="#tk-minor" transform="rotate(342 200 200)"/>
+  <use href="#tk-minor" transform="rotate(348 200 200)"/>
+  <use href="#tk-minor" transform="rotate(354 200 200)"/>
+
+  <!-- 三层金色圆环 -->
+  <circle cx="200" cy="200" r="58"  fill="none" stroke="url(#goldGrad)" stroke-width="1.5" opacity=".7"/>
+  <circle cx="200" cy="200" r="158" fill="none" stroke="#F5D472" stroke-width="1"   opacity=".4"/>
+  <circle cx="200" cy="200" r="166" fill="none" stroke="#F5D472" stroke-width="2"   opacity=".65"/>
+
+  <!-- 12 个齿轮扇形装饰齿 -->
+  <g fill="none" stroke="#FCE3A0" stroke-width="2" opacity=".75">
+    <use href="#tooth" transform="translate(200 40)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(30 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(60 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(90 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(120 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(150 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(180 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(210 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(240 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(270 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(300 200 200)"/>
+    <use href="#tooth" transform="translate(200 40) rotate(330 200 200)"/>
+  </g>
+</g>
+
+<!-- D. 内部蓝青光晕（呼吸） -->
+<circle class="halo-breath halo-aura-static" cx="200" cy="200" r="115" fill="url(#haloAura)"/>
+
+<!-- E. 粒子从锚点附近向外飘散 -->
+<g>
+  <circle class="p"    cx="200" cy="14"  r="1.6" fill="#FCE3A0" style="--dx:0; --dy:-25px"/>
+  <circle class="p p2" cx="385" cy="200" r="1.4" fill="#7DD3E8" style="--dx:25px; --dy:0"/>
+  <circle class="p p3" cx="200" cy="386" r="1.6" fill="#FCE3A0" style="--dx:0; --dy:25px"/>
+  <circle class="p p4" cx="15"  cy="200" r="1.4" fill="#7DD3E8" style="--dx:-25px; --dy:0"/>
+  <circle class="p p5" cx="312" cy="88"  r="1.2" fill="#FF9AC9" style="--dx:15px; --dy:-15px"/>
+  <circle class="p p6" cx="312" cy="312" r="1.2" fill="#C896FF" style="--dx:15px; --dy:15px"/>
+  <circle class="p p7" cx="88"  cy="312" r="1.2" fill="#5EEAD4" style="--dx:-15px; --dy:15px"/>
+  <circle class="p p8" cx="88"  cy="88"  r="1.2" fill="#FCE3A0" style="--dx:-15px; --dy:-15px"/>
+  <circle class="p p4" cx="356" cy="156" r="1"   fill="#FFFFFF" style="--dx:18px; --dy:-10px"/>
+  <circle class="p p2" cx="44"  cy="156" r="1"   fill="#FFFFFF" style="--dx:-18px; --dy:-10px"/>
+  <circle class="p p6" cx="356" cy="244" r="1"   fill="#FFFFFF" style="--dx:18px; --dy:10px"/>
+  <circle class="p p8" cx="44"  cy="244" r="1"   fill="#FFFFFF" style="--dx:-18px; --dy:10px"/>
+</g>
+
+<!-- F. 莫比乌斯环：横向固定，不旋转不俯仰；光带自身纹理流动 + 双层 drop-shadow 辉光 -->
+<g class="mobius-wrap">
+  <!-- 暗面（背后） -->
+  <path class="mobius-shadow"
+        d="M 90,200 C 90,130 145,130 200,200 C 255,270 310,270 310,200 C 310,130 255,130 200,200 C 145,270 90,270 90,200 Z"
+        fill="none" stroke="url(#mobiusShadow)" stroke-width="14" stroke-linecap="round"/>
+  <!-- 亮面 -->
+  <path class="mobius-light"
+        d="M 90,200 C 90,130 145,130 200,200 C 255,270 310,270 310,200 C 310,130 255,130 200,200 C 145,270 90,270 90,200 Z"
+        fill="none" stroke="url(#mobiusGrad)" stroke-width="12" stroke-linecap="round" opacity=".95"/>
+</g>
+
+<!-- 中心内核淡青辉光（呼吸，放星芒下方作底光） -->
+<circle class="core-aura" cx="200" cy="200" r="42" fill="url(#coreGlow)"/>
+
+<!-- G. 中心星芒：spike star sparkle（一闪一闪） -->
+<g class="star-burst">
+  <!-- 4 道副光尖（斜角 45°，细短，错峰 0.15s） -->
+  <g fill="url(#mobiusGrad)" opacity=".85">
+    <polygon class="spike-sub"     points="200,160 195,200 200,240 205,200" transform="rotate(45 200 200)"/>
+    <polygon class="spike-sub ss2" points="200,160 195,200 200,240 205,200" transform="rotate(135 200 200)"/>
+    <polygon class="spike-sub ss3" points="200,160 195,200 200,240 205,200" transform="rotate(225 200 200)"/>
+    <polygon class="spike-sub ss4" points="200,160 195,200 200,240 205,200" transform="rotate(315 200 200)"/>
+  </g>
+
+  <!-- 4 道主光尖（横+竖，菱形从中心向两端伸展，错峰 0.12s） -->
+  <g fill="#FFFFFF">
+    <!-- 上下光芒 -->
+    <polygon class="spike"      points="200,138 193,200 200,262 207,200"/>
+    <!-- 左右光芒 -->
+    <polygon class="spike s2"   points="138,200 200,193 262,200 200,207"/>
+    <!-- 副 1 -->
+    <polygon class="spike s3"   points="200,158 194,200 200,242 206,200" transform="rotate(45 200 200)"/>
+    <!-- 副 2 -->
+    <polygon class="spike s4"   points="200,158 194,200 200,242 206,200" transform="rotate(135 200 200)"/>
+  </g>
+
+  <!-- 中央白点（呼吸） -->
+  <g class="star-core">
+    <circle cx="200" cy="200" r="11" fill="#FFFFFF"/>
+    <circle cx="200" cy="200" r="6"  fill="#FFF5D6"/>
+    <circle cx="200" cy="200" r="2.5" fill="#FFFFFF"/>
+  </g>
+</g>
+
+</svg>
+</div>
+
+<div class="footer"><span>✦</span>&nbsp; ONFOREUS · STAR TRACK CHART &nbsp;<span>✦</span></div>
+
+<script>
+  document.getElementById('stage').addEventListener('click', function(){ this.classList.toggle('paused'); });
+</script>
+</body>
+</html>

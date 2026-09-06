@@ -1085,7 +1085,7 @@ onUnmounted(() => {
 
 /* 画布区 */
 .canvas-area { flex: 1; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-.canvas-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 56px; background: rgba(255,255,255,0.55); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,192,213,0.35); }
+.canvas-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 0 24px; height: 56px; background: var(--color-bg-soft); border-bottom: 1px solid var(--color-border); }
 .toolbar-left { display: flex; align-items: center; gap: 8px; }
 .toolbar-title { font-size: 16px; font-weight: 700; color: var(--color-text); }
 .toolbar-sub { font-size: 12px; color: var(--color-text-tertiary); }
@@ -1169,7 +1169,7 @@ onUnmounted(() => {
 
 .ai-analysis-card { padding: 16px 20px; border-top: 1px solid var(--color-border); }
 .analysis-actions { display: flex; gap: 8px; margin-top: 12px; }
-.dialog-overlay { position: fixed; inset: 0; background: rgba(30,20,40,0.35); backdrop-filter: blur(2px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.dialog-overlay { position: fixed; inset: 0; background: rgba(30,20,40,0.45); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .dialog-box { width: 380px; max-width: 90vw; background: var(--color-white, #fff); border-radius: 14px; padding: 20px; box-shadow: 0 12px 40px rgba(107,134,255,0.25); }
 .dialog-title { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--color-text); }
 .dialog-hint { margin: 0 0 14px; font-size: 12px; line-height: 1.7; color: var(--color-text-secondary); }
