@@ -292,7 +292,7 @@ const generateReport = async () => {
       weekTrend: stats.value?.weeklyMinutes || [],
       recentNoteTitles: notes.value.slice(0, 8).map(n => n.title),
     }
-    reportText.value = await (window as any).noteAPI.weeklyReport(data)
+    reportText.value = await window.noteAPI.weeklyReport(data)
   } catch (e: any) {
     showToast((e && e.message) || '周报生成失败', 'error')
   } finally {
@@ -405,7 +405,7 @@ const goToSettings = (hash?: string) => {
 const recQuotaAlert = reactive({ visible: false, usedGB: 0, thresholdGB: 2 })
 let offRecOverQuota: (() => void) | null = null
 function bindRecOverQuota() {
-  const api = (window as any).noteAPI
+  const api = window.noteAPI
   if (!api || typeof api.onRecOverQuota !== 'function') return
   offRecOverQuota = api.onRecOverQuota((payload: any) => {
     const used = Number(payload?.bytes || 0)

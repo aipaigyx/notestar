@@ -100,15 +100,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   // 主进程导航事件（复习提醒点击跳转等）
-  if ((window as any).noteAPI?.onNavigate) {
-    (window as any).noteAPI.onNavigate((path: string) => {
+  if (window.noteAPI?.onNavigate) {
+    window.noteAPI.onNavigate((path: string) => {
       router.push(path)
     })
   }
   // 悬浮球/语音等后台创建新笔记后的跳转通知（全局常驻监听，避免 NoteOrganize 未挂载时丢事件）
   let _offNotesOpen: (() => void) | null = null
-  if ((window as any).noteAPI?.onNotesOpen) {
-    _offNotesOpen = (window as any).noteAPI.onNotesOpen((noteId: string) => {
+  if (window.noteAPI?.onNotesOpen) {
+    _offNotesOpen = window.noteAPI.onNotesOpen((noteId: string) => {
       try {
         if (!noteId) return
         frontendLogger.info('App.vue', '收到 notes:open 广播，准备跳转', { noteId, path: route.path })

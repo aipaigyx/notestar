@@ -295,7 +295,7 @@ const genMindMap = async () => {
   mindMapBusy.value = true
   mindMapData.value = null
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     if (!api.extractHierarchy) throw new Error('extractHierarchy 不可用')
     mindMapData.value = await api.extractHierarchy({
       title: currentNote.value.title || '',
@@ -374,7 +374,7 @@ const exportSession = async (s: ChatSession) => {
       `## ${m.role === 'user' ? '🧑 我' : '✨ 来古士'}（${m.time}）\n\n${m.content}\n\n---\n\n`
     ).join('')
   try {
-    await (window as any).noteAPI.exportText(`${(s.title || '对话记录').slice(0, 30)}.md`, md)
+    await window.noteAPI.exportText(`${(s.title || '对话记录').slice(0, 30)}.md`, md)
   } catch (e) {
     errorMsg.value = '导出失败'
   }
@@ -388,7 +388,7 @@ const expandedWebIndex = ref(-1)
 
 // 打开联网来源链接
 const openWebSource = async (url: string) => {
-  try { await (window as any).noteAPI.openUrl(url) } catch (e) { /* ignore */ }
+  try { await window.noteAPI.openUrl(url) } catch (e) { /* ignore */ }
 }
 
 // 参考图加载失败时隐藏（防盗链/失效图）
@@ -411,8 +411,8 @@ const genAIImages = async (idx: number) => {
     const msg = messages.value[idx]
     if (!msg) return
     const [u1, u2] = await Promise.all([
-      (window as any).noteAPI.generateImage(extractImageQuery(question)),
-      (window as any).noteAPI.generateImage(extractImageQuery(question) + ' 3D render'),
+      window.noteAPI.generateImage(extractImageQuery(question)),
+      window.noteAPI.generateImage(extractImageQuery(question) + ' 3D render'),
     ])
     const newImgs = [u1, u2].filter(Boolean).map((u: string) => ({ localPath: '', directUrl: u, sourceUrl: u, title: '✨ AI 生成' }))
     if (newImgs.length) {
@@ -509,11 +509,11 @@ const sendMessage = async () => {
     let webSources: WebSearchResult[] = []
 
     // 联网搜索补充（开关开启时）：AI 直接基于网络资料总结，无需用户跳浏览器
-    if (webSearchEnabled.value && (window as any).noteAPI?.searchWeb) {
+    if (webSearchEnabled.value && window.noteAPI?.searchWeb) {
       webSearching.value = true
       scrollToBottom()
       try {
-        webSources = await (window as any).noteAPI.searchWeb(text)
+        webSources = await window.noteAPI.searchWeb(text)
         if (webSources.length) {
           noteContext += '\n\n【联网搜索到的网络资料（可能相关，请甄别使用；回答引用网络信息时请标注“网络资料”）】\n' +
             webSources.map((r, i) => `${i + 1}. ${r.title}\n${r.snippet}\n来源：${r.url}`).join('\n\n')
@@ -543,7 +543,7 @@ const sendMessage = async () => {
     })
 
     // 回答完成后异步搜索参考图（不阻塞回答；仅当联网开关开启）
-    if (webSearchEnabled.value && (window as any).noteAPI?.searchWebImages) {
+    if (webSearchEnabled.value && window.noteAPI?.searchWebImages) {
       const aiMsgIdx = messages.value.length - 1
       ;(async () => {
         try {
@@ -556,7 +556,7 @@ const sendMessage = async () => {
             .map(m => extractImageQuery(m.content))
             .join(' ')
           const imgQuery = (cur + ' ' + prev).trim().slice(0, 40)
-          const imgs = await (window as any).noteAPI.searchWebImages(imgQuery)
+          const imgs = await window.noteAPI.searchWebImages(imgQuery)
           if (imgs.length && messages.value[aiMsgIdx]) {
             messages.value[aiMsgIdx] = { ...messages.value[aiMsgIdx], webImages: imgs }
           }
@@ -605,7 +605,7 @@ const searchQuestion = async (index: number) => {
   const userMsg = messages.value.slice(0, index).reverse().find(m => m.role === 'user')
   if (!userMsg) return
   try {
-    await (window as any).noteAPI.openSearch(userMsg.content.slice(0, 120))
+    await window.noteAPI.openSearch(userMsg.content.slice(0, 120))
   } catch (e) {
     errorMsg.value = '打开浏览器搜索失败'
   }

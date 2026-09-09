@@ -754,7 +754,7 @@ const goReview = async () => {
 }
 const loadFollowSessions = async () => {
   try {
-    const list = await (window as any).noteAPI.recListSessions()
+    const list = await window.noteAPI.recListSessions()
     followSessions.value = list
     const nid = currentNote.value?.id
     // 诊断：打印所有有视频的会话的 noteId
@@ -763,13 +763,13 @@ const loadFollowSessions = async () => {
     // 用宽松匹配（trim + 隐式转换）
     const matched = list.find((s: any) => String(s.noteId || '').trim() === String(nid || '').trim())
     console.log('[DEBUG] loadFollowSessions', { total: list.length, currentNoteId: nid, matchedSession: matched?.sessionId || null, withVideoNoteIds: noteIds })
-    if ((window as any).noteAPI?.logWrite) {
-      try { await (window as any).noteAPI.logWrite('INFO', 'NoteOrganize', `loadFollowSessions total=${list.length} currentNoteId=${nid} matched=${matched?.sessionId || 'null'} | noteIds=[${noteIds}]`) } catch(_) {}
+    if (window.noteAPI?.logWrite) {
+      try { await window.noteAPI.logWrite('INFO', 'NoteOrganize', `loadFollowSessions total=${list.length} currentNoteId=${nid} matched=${matched?.sessionId || 'null'} | noteIds=[${noteIds}]`) } catch(_) {}
     }
   } catch (e: any) {
     console.error('[DEBUG] loadFollowSessions error', e)
-    if ((window as any).noteAPI?.logWrite) {
-      try { await (window as any).noteAPI.logWrite('ERROR', 'NoteOrganize', `loadFollowSessions error: ${e?.message || e}`) } catch(_) {}
+    if (window.noteAPI?.logWrite) {
+      try { await window.noteAPI.logWrite('ERROR', 'NoteOrganize', `loadFollowSessions error: ${e?.message || e}`) } catch(_) {}
     }
   }
 }
@@ -929,7 +929,7 @@ const exportAudio = async () => {
   if (!currentNote.value?.id || audioBusy.value) return
   audioBusy.value = true
   try {
-    const dataUri = await (window as any).noteAPI.noteAudio(currentNote.value.id)
+    const dataUri = await window.noteAPI.noteAudio(currentNote.value.id)
     if (dataUri) {
       audioSrc.value = dataUri
       await nextTick()
@@ -1244,7 +1244,7 @@ const startSystemRecording = async () => {
 
       try {
         const arrayBuffer = await audioBlob.arrayBuffer()
-        const result = await (window as any).noteAPI.transcribeAudio(arrayBuffer)
+        const result = await window.noteAPI.transcribeAudio(arrayBuffer)
         if (result && result.text) {
           pasteText.value = result.text
           audioTranscribed.value = true
@@ -1659,7 +1659,7 @@ const initCaptureSourceId = () => {
 // Day 3 P0-V2：注册 display-media 自定义选择器请求（主进程拦截 Chromium 原生弹窗后转过来的）
 let offDisplayMediaReq: (() => void) | null = null
 function initDisplayMediaBridge() {
-  const noteAPI = (window as any).noteAPI
+  const noteAPI = window.noteAPI
   if (!isElectron || !noteAPI || typeof noteAPI.onDisplayMediaRequest !== 'function') return
   offDisplayMediaReq = noteAPI.onDisplayMediaRequest(async (payload: any) => {
     const reqId = payload?.reqId
@@ -1769,7 +1769,7 @@ function closeCapturePickerWithCancelReply() {
   const rid = pendingDisplayMediaReqId.value
   if (!rid) return
   pendingDisplayMediaReqId.value = null
-  try { (window as any).noteAPI?.displayMediaReply({ reqId: rid, streamId: '' }) } catch (_) {}
+  try { window.noteAPI?.displayMediaReply({ reqId: rid, streamId: '' }) } catch (_) {}
 }
 // 自定义 picker open 时顺便把 overlay 的 cancel 绑定到 reply
 // （模板里 modal-overlay 取消按钮直接调这个函数）
@@ -1782,7 +1782,7 @@ const pickCaptureSource = async (s: { id: string; name: string }) => {
   const rid = pendingDisplayMediaReqId.value
   if (rid) {
     pendingDisplayMediaReqId.value = null
-    try { await (window as any).noteAPI?.displayMediaReply({ reqId: rid, streamId: s.id, remember: true }) } catch (_) {}
+    try { await window.noteAPI?.displayMediaReply({ reqId: rid, streamId: s.id, remember: true }) } catch (_) {}
     showToast('✓ 已选择：' + s.name.slice(0, 40))
     return
   }
@@ -1879,7 +1879,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeys)
   window.addEventListener('notestar:focus-search', handleFocusSearch)
   // 关键修复：notes 变动（含跟拍 finishSession 写 meta.json 后）立刻刷新 sessions
-  try { (window as any).noteAPI?.onNotesChanged?.(() => loadFollowSessions()) } catch (_) {}
+  try { window.noteAPI?.onNotesChanged?.(() => loadFollowSessions()) } catch (_) {}
 })
 
 onUnmounted(() => {

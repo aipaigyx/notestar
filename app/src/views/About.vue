@@ -204,9 +204,9 @@ function goBack() {
 
 onMounted(async () => {
   // 版本号：优先从主进程 package 读（Electron），浏览器预览下留空
-  if (isElectron && (window as any).noteAPI?.getAppVersion) {
+  if (isElectron && window.noteAPI?.getAppVersion) {
     try {
-      const info = await (window as any).noteAPI.getAppVersion()
+      const info = await window.noteAPI.getAppVersion()
       appVersion.value = (info && typeof info === 'object') ? (info.version || '') : ''
     } catch { /* ignore */ }
   }

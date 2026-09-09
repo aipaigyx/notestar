@@ -214,23 +214,25 @@ export const AI_PLATFORMS: AIPlatformConfig[] = [
     icon: '🟢',
     hostname: 'integrate.api.nvidia.com',
     apiPath: '/v1/chat/completions',
-    // ⚠️ 2026-09-02 实测 /v1/models：meta/llama-3.1-8b/70b/405b 已下线，以下均为真实可用的模型 id
-    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
+    // ⚠️ 2026-09-07 逐模型实测：NVIDIA 按「账号 × 模型」授权，目录可见 ≠ 可对话。
+    // 部分模型对免费/个人 Key 返回 404 "Function not found for account"。
+    // 本列表已按本机实测结果排序：前 4 个确认可用；下方「部分账号无授权」项遇 404 请换推荐模型。
+    defaultModel: 'google/gemma-4-31b-it',
     models: [
-      { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', desc: '推荐 · NVIDIA 优化 Llama' },
-      { id: 'nvidia/llama-3.1-nemotron-51b-instruct', name: 'Nemotron 51B', desc: '快速 · NVIDIA 优化' },
-      { id: 'nvidia/nemotron-4-340b-instruct', name: 'Nemotron-4 340B', desc: '超大规模模型' },
-      { id: 'nvidia/nemotron-3.5-lightning-30b-a3b', name: 'Nemotron 3.5 Lightning 30B', desc: '新一代快速模型' },
-      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron 3 Ultra 550B', desc: '旗舰模型' },
-      { id: 'meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 Vision 11B', desc: '👁️ 支持图片识别' },
-      { id: 'meta/llama-3.2-90b-vision-instruct', name: 'Llama 3.2 Vision 90B', desc: '👁️ 大参数视觉模型' },
-      { id: 'microsoft/phi-3-vision-128k-instruct', name: 'Phi-3 Vision', desc: '👁️ 微软视觉模型' },
-      { id: 'nvidia/vila', name: 'NVIDIA VILA', desc: '👁️ NVIDIA 视觉模型' },
-      { id: 'google/gemma-3-12b-it', name: 'Gemma 3 12B', desc: 'Google 最新' },
-      { id: 'mistralai/mistral-large', name: 'Mistral Large', desc: 'Mistral 旗舰' },
-      { id: 'mistralai/mixtral-8x22b-v0.1', name: 'Mixtral 8x22B', desc: '混合专家模型' },
-      { id: 'deepseek-ai/deepseek-v4-flash-0731', name: 'DeepSeek V4 Flash', desc: '快速推理' },
-      { id: 'deepseek-ai/deepseek-v4-pro-0813', name: 'DeepSeek V4 Pro', desc: '强推理' },
+      { id: 'google/gemma-4-31b-it', name: 'Gemma 4 31B', desc: '推荐 · 实测可用，中文干净' },
+      { id: 'nvidia/nemotron-3-ultra-550b-a55b', name: 'Nemotron 3 Ultra 550B', desc: '实测可用 · 旗舰' },
+      { id: 'nvidia/nemotron-3.5-lightning-30b-a3b', name: 'Nemotron 3.5 Lightning 30B', desc: '实测可用 · 推理型偏慢' },
+      { id: 'meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 Vision 11B', desc: '👁️ 实测可用 · 支持识图' },
+      { id: 'meta/llama-3.2-90b-vision-instruct', name: 'Llama 3.2 Vision 90B', desc: '👁️ 大参数视觉 · 常排队' },
+      { id: 'deepseek-ai/deepseek-v4-flash-0731', name: 'DeepSeek V4 Flash', desc: '快速推理 · 常排队' },
+      { id: 'deepseek-ai/deepseek-v4-pro-0813', name: 'DeepSeek V4 Pro', desc: '强推理 · 常排队' },
+      { id: 'nvidia/nemotron-4-340b-instruct', name: 'Nemotron-4 340B', desc: '部分账号无授权' },
+      { id: 'nvidia/llama-3.1-nemotron-51b-instruct', name: 'Nemotron 51B', desc: '部分账号无授权' },
+      { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B', desc: '旧默认 · 部分账号无授权' },
+      { id: 'google/gemma-3-12b-it', name: 'Gemma 3 12B', desc: '部分账号无授权' },
+      { id: 'mistralai/mistral-large', name: 'Mistral Large', desc: '部分账号无授权' },
+      { id: 'microsoft/phi-3-vision-128k-instruct', name: 'Phi-3 Vision', desc: '👁️ 部分账号无授权' },
+      { id: 'nvidia/vila', name: 'NVIDIA VILA', desc: '👁️ 部分账号无授权' },
     ],
     apiKeyUrl: 'https://build.nvidia.com',
     apiKeyPrefix: 'nvapi-',
@@ -344,100 +346,8 @@ export interface LogFileInfo {
   mtime: string
 }
 
-// Electron API 类型声明
-declare global {
-  interface Window {
-    noteAPI: {
-      // 悬浮球
-      showMainWindow: () => Promise<boolean>
-      quitApp: () => Promise<boolean>
-      // 笔记
-      getNotes: () => Promise<Note[]>
-      getNote: (id: string) => Promise<Note | null>
-      saveNote: (note: Partial<Note>) => Promise<Note>
-      deleteNote: (id: string) => Promise<boolean>
-      getDeletedNotes: () => Promise<Note[]>
-      restoreNote: (id: string) => Promise<boolean>
-      purgeNote: (id: string) => Promise<boolean>
-      // 课程
-      getCourses: () => Promise<Course[]>
-      saveCourse: (course: Partial<Course>) => Promise<Course>
-      deleteCourse: (id: string) => Promise<boolean>
-      // 对话
-      getChatSessions: () => Promise<ChatSession[]>
-      saveChatSession: (session: Partial<ChatSession>) => Promise<ChatSession>
-      deleteChatSession: (id: string) => Promise<boolean>
-      // 统计
-      getStats: () => Promise<Stats>
-      addStudyTime: (minutes: number) => Promise<Stats>
-      setPlan: (dailyMinutes: number) => Promise<Stats>
-      // 文件导入
-      importFiles: () => Promise<ImportedFile[] | null>
-      selectImage: () => Promise<{ name: string; dataUri: string; size: number } | null>
-      readClipboardImage: () => Promise<{ name: string; dataUri: string; size: number } | null>
-      saveImage: (dataUri: string) => Promise<string> // 返回 images/xxx.png 相对引用
-      listScreenSources: () => Promise<{ id: string; name: string; isScreen: boolean; thumbnail: string }[]>
-      captureScreen: (opts: { sourceId?: string; mode?: 'source' | 'foreground' }) => Promise<{ name: string; dataUri: string }>
-      exportNotes: (opts: { noteIds?: string[]; courseId?: string; format?: 'md' | 'html'; analysisMap?: Record<string, NoteAnalysis> }) => Promise<string | null>
-      backupData: () => Promise<string | null>
-      getBackupInfo: () => Promise<{ lastBackupAt?: string; backupDir?: string; overdue: boolean }>
-      // AI
-      generateNote: (rawText: string) => Promise<string>
-      chatWithAI: (question: string, noteContext: string, history?: ChatMessage[], mode?: 'qa' | 'teach' | 'quiz') => Promise<string>
-      summarizeNote: (noteContent: string) => Promise<string>
-      analyzeNote: (noteContent: string, includeImages?: boolean, noteId?: string, force?: boolean) => Promise<NoteAnalysis>
-      getAnalysisCache: (noteId: string, contents: string[]) => Promise<{ found: boolean; result?: NoteAnalysis; cachedAt?: string }>
-      expandNote: (noteContent: string, includeImages?: boolean) => Promise<NoteExpansion>
-      // 本地音频转写 (Whisper) + 语音转文字独立窗口
-      transcribeAudio: (audioData: ArrayBuffer) => Promise<string>
-      openVoiceWindow: () => Promise<boolean>
-      closeVoiceWindow: () => Promise<boolean>
-      // AI 流式监听
-      onGenerateNoteChunk: (callback: (chunk: string) => void) => void
-      onChatChunk: (callback: (chunk: string) => void) => void
-      // 数据管理
-      exportData: () => Promise<string | null>
-      // 导出任意文本（AI 对话导出 Markdown）
-      exportText: (filename: string, content: string) => Promise<boolean>
-      importData: () => Promise<{ success: boolean; notes: number; courses: number } | null>
-      clearData: (type: 'all' | 'notes' | 'chat' | 'stats' | 'courses') => Promise<boolean>
-      // 联网搜索（AI 助手兜底）：用系统浏览器打开搜索引擎
-      openSearch: (keywords: string) => Promise<boolean>
-      // 打开外部链接（联网来源点击）
-      openUrl: (url: string) => Promise<boolean>
-      // 联网搜索（AI 联网总结）：DDG 优先 + Bing 兜底
-      searchWeb: (query: string) => Promise<WebSearchResult[]>
-      // 联网参考图搜索（AI 回答配图）
-      searchWebImages: (query: string) => Promise<WebImageResult[]>
-      // AI 生图（免费 Pollinations）：返回图片直链 URL
-      generateImage: (prompt: string) => Promise<string>
-      // 知识点复习（题库 + 错题本）
-      quizSaveSessions: (sessions: QuizSession[]) => Promise<boolean>
-      quizGetSessions: () => Promise<QuizSession[]>
-      quizSaveMistakes: (mistakes: QuizMistake[]) => Promise<boolean>
-      quizGetMistakes: () => Promise<QuizMistake[]>
-      quizGenerate: (opts: { noteIds?: string[]; courseIds?: string[]; count?: number; provider?: 'auto' | 'cloud' | 'local'; extendRatio?: number }) => Promise<{ questions: QuizQuestion[]; provider: string }>
-      quizSaveMastery: (mastery: QuizMasteryMap) => Promise<boolean>
-      quizGetMastery: () => Promise<QuizMasteryMap>
-      quizExportHtml: (opts: { title: string; items: { question: string; answer: string; myAnswer: string; explanation: string; source: string; typeLabel?: string; difficulty?: string; correct: boolean; kind?: string; basis?: string }[] }) => Promise<string | null>
-      // 设置
-      getSettings: () => Promise<Settings>
-      saveSettings: (settings: Settings) => Promise<boolean>
-      // AI 连通性测试 + 获取模型列表
-      testConnection: (config: { provider?: string; apiKey: string; hostname?: string; apiPath?: string }) => Promise<{ success: boolean; message: string; models?: string[] }>
-      // 日志系统
-      logWrite: (level: LogLevel, source: string, message: string, data?: any) => Promise<boolean>
-      logGetFiles: () => Promise<LogFileInfo[]>
-      logRead: (fileName: string) => Promise<{ lines: LogEntry[]; error: string | null }>
-      logClear: (fileName: string) => Promise<boolean>
-      logSetLevel: (level: LogLevel) => Promise<boolean>
-      logOpenDir: () => Promise<boolean>
-      onLogEntry: (callback: (entry: LogEntry) => void) => () => void
-  // 数据变更事件（快捷键/悬浮球后台创建笔记后通知刷新）
-  onNotesChanged: (callback: () => void) => void
-    }
-  }
-}
+// Electron API 类型声明：见 src/note-api.d.ts（完整权威来源）
+// 原内联 Window.noteAPI 声明已迁移至 src/note-api.d.ts，避免与完整声明重复冲突。
 
 // ========== 知识点复习（Quiz） ==========
 export type QuizQuestionType = 'choice' | 'blank' | 'judge' | 'multi' | 'match' | 'sort'

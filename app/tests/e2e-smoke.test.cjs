@@ -46,10 +46,11 @@ describe('端到端冒烟（沙箱可跑部分）', () => {
   })
 
   it('cosine 在跨课程场景可用', () => {
-    // Blender 灯光 vs Blender 材质 → 相似（同一课程）
-    const v1 = Array.from({ length: 768 }, () => Math.random())
-    const v2 = Array.from({ length: 768 }, () => Math.random())
-    const v3 = v1.map(x => x + 0.01 * Math.random()) // 接近 v1
+    // 用零均值向量：独立随机向量的 cosine 期望接近 0，断言才稳定
+    const rnd = () => Math.random() * 2 - 1
+    const v1 = Array.from({ length: 768 }, rnd)
+    const v2 = Array.from({ length: 768 }, rnd)
+    const v3 = v1.map(x => x + 0.01 * rnd()) // 接近 v1
     expect(cosine(v1, v1)).toBeCloseTo(1, 3)
     expect(cosine(v1, v3)).toBeGreaterThan(0.9) // 相似
     expect(cosine(v1, v2)).toBeLessThan(0.5) // 不相似

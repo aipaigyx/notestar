@@ -898,7 +898,7 @@ onMounted(() => {
   // 排序题首次玩法引导：读全局记忆（看过一次就不再弹）
   try { sortGuideDismissed.value = localStorage.getItem(SORT_GUIDE_KEY) === '1' } catch { /* ignore */ }
   // 出题通道通知：云端超时自动回退本地时即时提示，避免误以为卡死
-  const api = (window as any).noteAPI
+  const api = window.noteAPI
   if (api?.onQuizProviderNotice) {
     noticeCleanup = api.onQuizProviderNotice((p: any) => {
       if (p?.kind === 'fallback') {

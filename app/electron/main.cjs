@@ -20,7 +20,7 @@ if (process.env.NOTESTAR_SOFTWARE === '1') {
 // 笔记向量化（本地 nomic-embed-text，跨课程检索用）
 // 注意：EMBEDDINGS_FILE / embeddingStore 需要 dataDir（来自 storage.cjs），
 // 在 storage require 之后才能初始化。
-const { EmbeddingStore, embedOne, batchEmbed, search: embedSearch, EMBED_MODEL, EMBED_DIM } = require('./embed.cjs')
+const { EmbeddingStore, embedOne, batchEmbed, search: embedSearch, ollamaEmbed, EMBED_MODEL, EMBED_DIM } = require('./embed.cjs')
 const autoUpdater = require('./auto-updater.cjs')
 let embeddingStore = null
 
@@ -366,7 +366,7 @@ ipcMain.handle('ai:testConnection', async (event, { provider, apiKey, hostname, 
       ? '对话请求超时（15秒）——模型可能排队或路由较慢'
       : `对话请求网络错误：${chatRes.networkError}`
   } else if (bodyText.includes('Function') && bodyText.includes('not found')) {
-    chatErr = 'HTTP 404 Function not found——该账号无此模型的调用权限（目录可见但实际不可路由），请到平台重新生成 API Key 或检查账号授权'
+    chatErr = 'HTTP 404 Function not found——该账号无此模型的调用权限（目录可见 ≠ 可对话）。请在设置中换用标注「实测可用」的模型（如 google/gemma-4-31b-it），或到 build.nvidia.com 检查账号对该模型的授权'
   } else if (chatRes.status === 401 || chatRes.status === 403) {
     chatErr = `HTTP ${chatRes.status} 鉴权失败——API Key 无效或无权限`
   } else if (chatRes.status === 429) {
@@ -1185,7 +1185,7 @@ ipcMain.handle('ai:chat', async (event, question, noteContext, history, mode = '
   // 失败/无结果优雅降级（不阻塞主流程）
   if (embeddingStore && embeddingStore.size() > 0 && question) {
     try {
-      const qVec = await require('./embed.cjs').ollamaEmbed(String(question).slice(0, 500))
+      const qVec = await ollamaEmbed(String(question).slice(0, 500))
       const related = embedSearch(embeddingStore, qVec, { k: 3, minScore: 0.35 })
       if (related && related.length) {
         // 用命中的 summary + noteId 拼成简短参考（避免 context 爆掉）
@@ -3606,7 +3606,7 @@ ipcMain.handle('embed:search', async (e, { query, k = 5, minScore = 0.3, courseI
   if (!embeddingStore) return []
   if (!query || typeof query !== 'string') return []
   try {
-    const vec = await require('./embed.cjs').ollamaEmbed(query)
+    const vec = await ollamaEmbed(query)
     return embedSearch(embeddingStore, vec, { k, minScore, courseId })
   } catch (err) {
     logger.warn('Embed', '向量检索失败', { err: err.message })
@@ -4041,6 +4041,9 @@ function createBubbleWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // 必须关闭 sandbox：preload 需 require('./ipc-constants.cjs')，
+      // 沙箱模式下 preload 只能加载内置模块，本地文件 require 会失败 → noteAPI 缺失
+      sandbox: false,
       // 独立 session → 不跟主窗口抢 defaultSession 的 DisplayMedia handler
       session: session.fromPartition('notestar-bubble', { cache: false }),
     },

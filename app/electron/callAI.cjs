@@ -8,11 +8,13 @@ const AI_PLATFORMS = {
     hostname: 'api.deepseek.com',
     apiPath: '/chat/completions',
     defaultModel: 'deepseek-chat',
+    keyPrefix: 'sk-',
   },
   openai: {
     hostname: 'api.openai.com',
     apiPath: '/v1/chat/completions',
     defaultModel: 'gpt-4o-mini',
+    keyPrefix: 'sk-',
   },
   zhipu: {
     hostname: 'open.bigmodel.cn',
@@ -28,12 +30,17 @@ const AI_PLATFORMS = {
     hostname: 'api.moonshot.cn',
     apiPath: '/v1/chat/completions',
     defaultModel: 'moonshot-v1-8k',
+    keyPrefix: 'sk-',
   },
   nvidia: {
     hostname: 'integrate.api.nvidia.com',
     apiPath: '/v1/chat/completions',
-    // ⚠️ 2026-09-02 实测：meta/llama-3.1-8b 已下线 → 用真实可用的 nemotron-70b
-    defaultModel: 'nvidia/llama-3.1-nemotron-70b-instruct',
+    // ⚠️ 2026-09-07 逐模型实测：NVIDIA 按「账号 × 模型」授权。nemotron-70b/gemma-3/mistral-large
+    // 等对免费 Key 返回 404；gemma-4-31b-it 实测可用且中文输出干净 → 设为默认。
+    defaultModel: 'google/gemma-4-31b-it',
+    keyPrefix: 'nvapi-',
+    // NVIDIA 首包校验需要的关键采样参数，随平台声明
+    extraRequest: { top_p: 1, seed: 42 },
   },
   local: {
     hostname: '127.0.0.1',
@@ -159,12 +166,9 @@ function createAIModule({ logger, getProxyAgent }) {
       const provider = settings.provider || 'deepseek'
       const platform = AI_PLATFORMS[provider] || AI_PLATFORMS.deepseek
       // 防御：key 前缀必须与平台匹配（防止"把 DeepSeek 的 sk- key 串到 NVIDIA"这类错误）
-      // 只在已知前缀规则时校验，避免误伤
-      const KEY_PREFIX = {
-        nvidia: 'nvapi-', deepseek: 'sk-', openai: 'sk-', moonshot: 'sk-',
-      }
-      if (provider !== 'local' && settings.apiKey && KEY_PREFIX[provider]) {
-        const expect = KEY_PREFIX[provider]
+      // 仅当平台声明了 keyPrefix 时才校验，避免误伤（local/zhipu/qwen 不校验）
+      const expect = platform.keyPrefix
+      if (provider !== 'local' && settings.apiKey && expect) {
         if (!settings.apiKey.trim().startsWith(expect)) {
           reject(new Error(`${platform.name || provider} 的 API Key 应以 "${expect}" 开头，当前填写的 key 属于其他平台（可能切换服务商时串用了 key）。请到 设置 → AI 配置 重新粘贴 ${provider} 专属 key。`))
           return
@@ -182,9 +186,9 @@ function createAIModule({ logger, getProxyAgent }) {
         max_tokens: Math.min(Math.max(outputTokens, 128), 4096),
       }
 
-      if (provider === 'nvidia') {
-        reqBody.top_p = 1
-        reqBody.seed = 42
+      // 平台声明的关键采样参数（如 NVIDIA 的 top_p/seed），随平台出场，新增平台只加配置
+      if (platform.extraRequest) {
+        Object.assign(reqBody, platform.extraRequest)
       }
 
       const reqData = JSON.stringify(reqBody)

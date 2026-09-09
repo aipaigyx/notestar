@@ -553,7 +553,6 @@ const router = useRouter()
 const goAbout = () => { router.push('/about') }
 
 // ── 自动更新 ──
-const isElectron = (window as any).noteAPI?.updateCheck !== undefined
 const appVersion = ref('')
 const updateStatus = ref({
   isChecking: false,
@@ -568,30 +567,30 @@ let unsubUpdateStatus: (() => void) | null = null
 
 const checkUpdate = async () => {
   try {
-    await (window as any).noteAPI.updateCheck()
+    await window.noteAPI.updateCheck()
   } catch (_) { /* ignore */ }
 }
 
 const downloadUpdate = async () => {
   try {
-    await (window as any).noteAPI.updateDownload()
+    await window.noteAPI.updateDownload()
   } catch (_) { /* ignore */ }
 }
 
 const installUpdate = async () => {
   try {
-    await (window as any).noteAPI.updateInstall()
+    await window.noteAPI.updateInstall()
   } catch (_) { /* ignore */ }
 }
 
 if (isElectron) {
   // 监听更新状态
-  unsubUpdateStatus = (window as any).noteAPI.onUpdateStatus((status: any) => {
+  unsubUpdateStatus = window.noteAPI.onUpdateStatus((status: any) => {
     updateStatus.value = { ...updateStatus.value, ...status }
   })
   // 获取当前版本号
-  if ((window as any).noteAPI.getAppVersion) {
-    (window as any).noteAPI.getAppVersion().then((info: any) => {
+  if (window.noteAPI.getAppVersion) {
+    window.noteAPI.getAppVersion().then((info: any) => {
       if (info && info.version) appVersion.value = info.version
     }).catch(() => {})
   }
@@ -804,7 +803,7 @@ const cleanupOldRecordings = async () => {
   cleaningRecs.value = true
   followMsg.value = ''
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     const r = (api.recCleanupBefore ? await api.recCleanupBefore(days) : null) || { removed: 0, bytes: 0 }
     await loadFollowInfo()
     const mb = ((r.bytes || 0) / 1024 / 1024).toFixed(1)
@@ -819,7 +818,7 @@ const cleanupOldRecordings = async () => {
 }
 const loadFollowInfo = async () => {
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     if (api.followListVisionModels) {
       const r = await api.followListVisionModels()
       visionModels.value = r.vision || []
@@ -845,7 +844,7 @@ const fmtDur = (sec: number) => {
 }
 const loadRecSessions = async () => {
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     recSessions.value = (api.recListSessions ? await api.recListSessions() : []) || []
   } catch (e) { recSessions.value = [] }
 }
@@ -856,7 +855,7 @@ const deleteRecSession = async (s: any) => {
     return
   }
   try {
-    await (window as any).noteAPI.recDeleteSession(s.sessionId)
+    await window.noteAPI.recDeleteSession(s.sessionId)
     showToast('✓ 已删除录屏', 'success')
     recSessions.value = recSessions.value.filter(x => x.sessionId !== s.sessionId)
     followMsg.value = ''
@@ -873,7 +872,7 @@ const embedMsg = ref('')
 const embedMsgType = ref<'success' | 'error'>('success')
 const loadEmbedInfo = async () => {
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     if (api.embedStatus) embedInfo.value = await api.embedStatus()
   } catch (e) { /* ignore */ }
 }
@@ -882,7 +881,7 @@ const rebuildEmbeddings = async () => {
   embBusy.value = true
   embedMsg.value = ''
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     if (!api.batchEmbed) throw new Error('embedding 不可用')
     embedMsg.value = '🔄 重建中…请稍候（本地 Ollama 推理，可能要 1-3 分钟）'
     embedMsgType.value = 'success'
@@ -906,7 +905,7 @@ const pullVisionModel = async () => {
   pullingModel.value = true
   followMsg.value = ''
   try {
-    const ok = await (window as any).noteAPI.pullOllamaModel(followVisionModel.value)
+    const ok = await window.noteAPI.pullOllamaModel(followVisionModel.value)
     followMsg.value = ok ? `✓ ${followVisionModel.value} 下载完成` : '✕ 下载失败，请查看日志'
     followMsgType.value = ok ? 'success' : 'error'
     await loadFollowInfo()
@@ -918,7 +917,7 @@ const pullVisionModel = async () => {
   }
 }
 const openRecordingsDir = async () => {
-  try { await (window as any).noteAPI.recOpenDir() } catch (e) { /* ignore */ }
+  try { await window.noteAPI.recOpenDir() } catch (e) { /* ignore */ }
 }
 const deleteAllRecordings = async () => {
   // P1-6 修复：两次确认 + 必须输入"清空录屏"四个字才执行，避免手滑误删
@@ -935,7 +934,7 @@ const deleteAllRecordings = async () => {
     showToast(userText ? '输入不一致，已取消' : '已取消', 'warn')
     return
   }
-  const done = await (window as any).noteAPI.recDeleteAll()
+  const done = await window.noteAPI.recDeleteAll()
   if (done) {
     recUsage.value = { sessions: 0, bytes: 0 }
     recSessions.value = []

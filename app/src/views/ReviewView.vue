@@ -127,7 +127,7 @@ const playCurrentCandidate = () => {
   if (!url) { videoError.value = '视频加载失败（所有视频源均不可用）'; return }
   videoError.value = ''
   videoSrc.value = url
-  try { (window as any).noteAPI?.logWrite?.('info', 'Review', 'set-video', { src: url, cand: `${playIdx + 1}/${playQueue.length}`, base: playBaseT }) } catch (_) {}
+  try { window.noteAPI?.logWrite?.('info', 'Review', 'set-video', { src: url, cand: `${playIdx + 1}/${playQueue.length}`, base: playBaseT }) } catch (_) {}
   setTimeout(() => {
     const v = videoRef.value
     if (!v) return
@@ -144,7 +144,7 @@ function onVideoError() {
   if (playQueue.length && playIdx < playQueue.length - 1) {
     playIdx++
     const nxt = playQueue[playIdx]
-    try { (window as any).noteAPI?.logWrite?.('warn', 'Review', 'video-source-fallback', { from: videoSrc.value, to: nxt, idx: playIdx }) } catch (_) {}
+    try { window.noteAPI?.logWrite?.('warn', 'Review', 'video-source-fallback', { from: videoSrc.value, to: nxt, idx: playIdx }) } catch (_) {}
     setTimeout(() => {
       videoError.value = ''
       videoSrc.value = nxt
@@ -169,11 +169,11 @@ function onVideoError() {
   }
   videoError.value = msg
   console.error('[Review] video error', msg, err, 'src=', videoSrc.value)
-  try { (window as any).noteAPI?.logWrite?.('error', 'Review', 'video-error', { msg, code: err?.code, src: videoSrc.value, sessionId: sessionId.value }) } catch (_) {}
+  try { window.noteAPI?.logWrite?.('error', 'Review', 'video-error', { msg, code: err?.code, src: videoSrc.value, sessionId: sessionId.value }) } catch (_) {}
 }
 function onVideoLoaded() {
   videoError.value = ''  // 加载成功 → 清错误
-  try { (window as any).noteAPI?.logWrite?.('info', 'Review', 'video-loaded', { src: videoSrc.value, sessionId: sessionId.value }) } catch (_) {}
+  try { window.noteAPI?.logWrite?.('info', 'Review', 'video-loaded', { src: videoSrc.value, sessionId: sessionId.value }) } catch (_) {}
 }
 function retryCurrentVideo() {
   videoError.value = ''
@@ -255,7 +255,7 @@ const loadSession = async (s: any) => {
   // 加载笔记条目
   if (noteId.value) {
     try {
-      const note = await (window as any).noteAPI.getNote(noteId.value)
+      const note = await window.noteAPI.getNote(noteId.value)
       if (note) entries.value = parseEntries(note.content)
       else entries.value = []
     } catch (e) { entries.value = [] }
@@ -266,7 +266,7 @@ const loadSession = async (s: any) => {
 }
 
 const setVideoSegment = (idx: number) => {
-  try { (window as any).noteAPI?.logWrite?.('info', 'Review', 'set-video-enter', { idx, segs: segments.value.length }) } catch (_) {}
+  try { window.noteAPI?.logWrite?.('info', 'Review', 'set-video-enter', { idx, segs: segments.value.length }) } catch (_) {}
   if (!segments.value.length || idx < 0 || idx >= segments.value.length) return
   curSegIndex.value = idx
   curSegOffset.value = segOffsetAt(idx)
@@ -341,7 +341,7 @@ const onTime = () => {
 
 async function refreshSessions() {
   try {
-    sessions.value = await (window as any).noteAPI.recListSessions()
+    sessions.value = await window.noteAPI.recListSessions()
     // 只取有视频文件的会话（排除正在录/已空的）
     const withVideo = sessions.value.filter(s => s.segments && s.segments.length > 0)
     const sid = route.query.sessionId as string
@@ -367,10 +367,10 @@ const deleteSession = async (s: any) => {
   const userText = (window.prompt(`确定删除该录屏会话吗？\n会话：${s.title || s.sessionId}\n时长：${fmtDur(s.durationSec)}，占用：${sizeText}，段数：${s.segments?.length || 0}\n\n请输入 "删除录屏" 四个字确认删除：\n（取消或输入错误 = 不删除）`) || '').trim()
   if (userText !== '删除录屏') return
   try {
-    const api = (window as any).noteAPI
+    const api = window.noteAPI
     const ok = await (api?.recDeleteSession ? api.recDeleteSession(s.sessionId) : null)
     if (ok === false) throw new Error('主进程删除失败')
-    try { (window as any).noteAPI?.logWrite?.('info', 'Review', 'delete-session', { sessionId: s.sessionId, sizeText }) } catch (_) {}
+    try { window.noteAPI?.logWrite?.('info', 'Review', 'delete-session', { sessionId: s.sessionId, sizeText }) } catch (_) {}
   } catch (e) {
     alert('删除会话失败：' + ((e as any)?.message || String(e)))
     return
@@ -396,7 +396,7 @@ const deleteSession = async (s: any) => {
 onMounted(() => {
   refreshSessions()
   // 录屏停止（notes:changed）时自动刷新会话列表，让新录好的会话立即出现，无需手动点 🔄 或重进页面
-  try { (window as any).noteAPI?.onNotesChanged?.(() => refreshSessions()) } catch (_) {}
+  try { window.noteAPI?.onNotesChanged?.(() => refreshSessions()) } catch (_) {}
 })
 watch(() => route.fullPath, refreshSessions)
 onUnmounted(() => { if (scrollT) clearTimeout(scrollT) })

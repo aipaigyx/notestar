@@ -1,18 +1,29 @@
 /**
  * 主题皮肤引擎
- * - 加载翁法罗斯主题元数据（基底调色板 + 字体）
+ * - 从注册表 THEMES 加载当前主题（当前为翁法罗斯招牌主题）的基底调色板 + 字体
  * - 把主题的 palette 注入到 document.documentElement.style 的 CSS 变量上
  * - 提供装饰层开关（背景/粒子/顶部光晕），持久化到 localStorage
- * - 单一皮肤：翁法罗斯（紫夜鎏金），不提供多主题切换
+ * - 注册表驱动：新增主题只需在 registry.ts 登记，引擎无需改动
  */
 import { ref, computed, watchEffect } from 'vue'
-import { OMPHALOS_THEME } from './omphalos/theme'
+import { THEMES, getTheme, hasTheme, type ThemeId } from './registry'
 
-export type ThemeId = 'omphalos'
+export type { ThemeId } from './registry'
 
 const STORAGE_KEY = 'notestar_active_theme'
 
-const activeTheme = ref<ThemeId>('omphalos')
+const activeTheme = ref<ThemeId>(getInitialTheme())
+
+// 从 localStorage 恢复上次激活主题（非法值回退默认）
+function getInitialTheme(): ThemeId {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved && hasTheme(saved)) return saved
+    } catch { /* ignore */ }
+  }
+  return 'omphalos'
+}
 
 /** 皮肤装饰层开关（持久化） */
 const LAYER_KEY = 'notestar_skin_layers'
@@ -34,16 +45,17 @@ if (typeof localStorage !== 'undefined') {
   } catch { /* ignore */ }
 }
 
-/** 注入主题 CSS 变量到 :root */
-function applyOmphalosVars() {
-  // 把主题标识写到 :root，供全局 CSS 的 [data-theme="omphalos"] 选择器匹配
+/** 注入某主题的 CSS 变量到 :root */
+function applyThemeVars(id: ThemeId) {
+  const theme = getTheme(id)
+  // 把主题标识写到 :root，供全局 CSS 的 [data-theme="*"] 选择器匹配
   if (typeof document !== 'undefined') {
     const el = document.documentElement
-    el.setAttribute('data-theme', 'omphalos')
+    el.setAttribute('data-theme', id)
     // 若非软件回退模式，移除禁用毛玻璃标记
     if (!(window as any).__NOTESTAR_SOFTWARE__) el.classList.remove('sw-disable-blur')
   }
-  const p = OMPHALOS_THEME.palette
+  const p = theme.palette
   const r = document.documentElement.style
   r.setProperty('--om-bg-deep',     p.bgDeep)
   r.setProperty('--om-bg-mid',      p.bgMid)
@@ -54,13 +66,13 @@ function applyOmphalosVars() {
   r.setProperty('--om-text-pri',    p.textPri)
   r.setProperty('--om-text-sec',    p.textSec)
   r.setProperty('--om-text-mute',   p.textMute)
-  r.setProperty('--om-font-cn',     OMPHALOS_THEME.fonts.cn)
+  r.setProperty('--om-font-cn',     theme.fonts.cn)
 }
 
 export function useThemeEngine() {
-  // 初次挂载：注入翁法罗斯基底
+  // 初次挂载：注入当前激活主题基底
   if (typeof document !== 'undefined') {
-    applyOmphalosVars()
+    applyThemeVars(activeTheme.value)
   }
 
   // 持久化
@@ -71,8 +83,9 @@ export function useThemeEngine() {
   })
 
   function setTheme(id: ThemeId) {
-    // 单一皮肤：仅翁法罗斯，切换其他无效
-    if (id === 'omphalos') applyOmphalosVars()
+    if (!hasTheme(id)) return
+    activeTheme.value = id
+    applyThemeVars(id)
   }
 
   function toggleLayer(key: string) {
@@ -88,3 +101,6 @@ export function useThemeEngine() {
     setTheme,
   }
 }
+
+// 暴露主题注册表面（供新建皮肤/选择器用）
+export { THEMES }
