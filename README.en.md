@@ -1,138 +1,133 @@
+<!-- ============================================================
+     NoteStar · 笔记星图  README (English)
+     Anime / Omphalos aesthetic / Local-first
+     ============================================================ -->
+
+<p align="center">
+  <a href="https://space.bilibili.com/12644772">
+    <img width="96" height="96" src="docs/author-avatar.jpg" style="border-radius:50%" alt="星萌Y小郭酱">
+  </a>
+</p>
+
 <div align="center">
 
-![NoteStar](docs/cover.jpg)
+**🤍 星萌Y小郭酱 (Xingmeng Y Xiaoguo Jiang)**
+
+Bilibili creator · Anime / Blender NPR / indie dev
+
+📺 [Bilibili Space](https://space.bilibili.com/12644772) · 🌐 [English](README.en.md) / [中文](README.md)
+
+</div>
+
+---
+
+<p align="center">
+
+![NoteStar · NoteStar — turn online courses into an Omphalos adventure](docs/cover.jpg)
+
+</p>
+
+<div align="center">
 
 # 🌌 NoteStar · 笔记星图
 
 ### Turn online courses into an Omphalos adventure ✨
 
-**Local-first · Anime aesthetic · AI follow-capture notes**
+**Auto screen-capture notes · AI tutor · Local-first · Anime aesthetic**
 
 </div>
 
 <div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-FF6B9D?style=flat-square&logo=opensourceinitiative)](LICENSE)
-[![Windows](https://img.shields.io/badge/Windows-10%2F11-4292F5?style=flat-square&logo=windows&logoColor=white)](#requirements)
-[![Node](https://img.shields.io/badge/Node.js-%E2%89%A518-8CC84B?style=flat-square&logo=nodedotjs&logoColor=white)](#requirements)
-[![Vue](https://img.shields.io/badge/Vue-3-42B883?style=flat-square&logo=vue.js&logoColor=white)](#tech-stack)
-[![Electron](https://img.shields.io/badge/Electron-30-9EEAF9?style=flat-square&logo=electron&logoColor=white)](#tech-stack)
+[![License: MIT](https://img.shields.io/badge/License-MIT-FF6B9D?style=flat-square&logo=opensourceinitiative&logoColor=white)](#-license)
+[![Windows](https://img.shields.io/badge/Windows-10%2F11-4292F5?style=flat-square&logo=windows&logoColor=white)](#-requirements)
+[![Node](https://img.shields.io/badge/Node.js-%E2%89%A518-8CC84B?style=flat-square&logo=nodedotjs&logoColor=white)](#-requirements)
+[![Vue](https://img.shields.io/badge/Vue-3-42B883?style=flat-square&logo=vue.js&logoColor=white)](#-tech-stack)
+[![Electron](https://img.shields.io/badge/Electron-30-9EEAF9?style=flat-square&logo=electron&logoColor=white)](#-tech-stack)
 [![Bilibili](https://img.shields.io/badge/B站-星萌Y小郭酱-FF69B4?style=flat-square&logo=bilibili&logoColor=white)](https://space.bilibili.com/12644772)
 
 </div>
 
-<img width="34" height="34" align="left" style="border-radius:50%" src="docs/author-avatar.jpg" alt="星萌Y小郭酱">
-
-> **👤 Author**: [星萌Y小郭酱](https://space.bilibili.com/12644772) · Bilibili creator · Anime / Blender NPR / indie dev
->
-> **🌐 Language / 语言： [English](README.en.md) · [中文](README.md)**
-
 ---
 
-## 🎭 What is this?
+## 🎭 What is NoteStar
 
 Scrambling to take notes during class? Forgetting everything right after? Reviewing with no map?
 
-**NoteStar** is built for you — an anime-styled desktop tool that **auto-captures your screen into notes**.
+**Whatever you can't remember, NoteStar remembers for you.**
 
-Just attend class and let it do the rest: one click on the floating bubble to start recording, AI silently captures frames and understands what you're learning, then organizes key points into a timeline-based note. Review right after class — no more scrubbing through recordings from the start (｡•̀ᴗ-)✧
+Click the floating bubble to start recording — AI quietly grabs a frame now and then, understands what you're learning, and organizes the key points into illustrated notes with timestamps. Review right after class, no more scrubbing from the start (｡•̀ᴗ-)✧
 
----
-
-## ⚡ How it works in 60 seconds
-
-1. Click the **floating bubble** on your desktop, select "Record & take notes"
-2. Attend class (or slack off, your call) — it captures frames + runs AI recognition in the background
-3. Each result gets auto-appended as `🎥 timestamp + screenshot + description`
-4. Stop recording → video & notes auto-bound → replay highlights along the timeline
-5. Time to review? AI tutor generates quizzes, explains, and links the knowledge graph
-
-> All data stays on your machine. In local mode, you don't even need internet.
+> All data lives on your own machine. In local mode, you don't even need internet.
 
 ---
 
-## 🖼️ Screenshots
+## ✨ The Magic
 
 <div align="center">
 
-| Dashboard | Notes |
+| | |
 |:---:|:---:|
-| ![Dashboard](docs/screenshots/01-dashboard.png) | ![Notes](docs/screenshots/02-notes.png) |
-| Study stats · Pomodoro · Review list | Course-note org · Follow-capture list |
-
-| Knowledge Graph | AI Tutor |
-|:---:|:---:|
-| ![Knowledge Graph](docs/screenshots/03-graph.png) | ![AI Tutor](docs/screenshots/05-assistant.png) |
-| 万帷网 · Auto knowledge linking | Contextual Q&A · Explanations |
-
-| Blacktide Erosion Skin | Settings |
-|:---:|:---:|
-| ![Blacktide Erosion](docs/screenshots/06-heirs.png) | ![Settings](docs/screenshots/07-settings.png) |
-| Ink erosion · Gold-red flames · Embers | AI · Voice · Appearance · Recording |
+| **🎥 Follow-Capture Notes**<br>One-click recording, AI frame capture & recognition, real-time timeline notes | **🤖 Dual AI Modes**<br>Cloud DeepSeek / Volcengine, or local Ollama — switch anytime |
+| **🕸️ Knowledge Web**<br>Knowledge points auto-link into a web, cross-course search | **🔁 Review Loop**<br>AI quizzes, immersive review, due reminders |
+| **🎙️ Voice Loop**<br>Local transcription + TTS, review while walking | **📊 Study Dashboard**<br>Time · notes · progress · weekly reports |
+| **🎨 Omphalos Aesthetic**<br>Pink-purple-gold · Bento cards · breathing inline SVG | **🔒 Your Data, Your Rules**<br>All local — nothing leaves your machine in local mode |
 
 </div>
 
 ---
 
-## ✨ Soul Features
+## 🖼️ Showcase
 
-### 🎥 Follow-Capture Notes
-A system-level desktop floating bubble for one-click recording. AI captures & recognizes a frame every 30s, generating timestamped illustrated notes in real time. Works smoothly even on low-end machines.
+<div align="center">
 
-### 🤖 Dual AI Modes
-- **Cloud**: DeepSeek / Volcengine APIs, works out of the box
-- **Local**: Ollama (moondream for vision + qwen2.5 for chat + nomic for embeddings), data never leaves your machine
-Switch anytime, use whichever you prefer.
+| Dashboard · Study stats | Notes · Timeline |
+|:---:|:---:|
+| <img src="docs/screenshots/01-dashboard.png" alt="Dashboard" width="320"> | <img src="docs/screenshots/02-notes.png" alt="Notes" width="320"> |
+| Study stats · Pomodoro · Review list | Course-note org · Follow-capture |
 
-### 🔒 Your Data, Your Rules
-Notes, screenshots & recordings all live on your own disk. In local mode, nothing leaves your machine.
+| Knowledge Web · Graph | AI Tutor · Contextual Q&A |
+|:---:|:---:|
+| <img src="docs/screenshots/03-graph.png" alt="Knowledge graph" width="320"> | <img src="docs/screenshots/05-assistant.png" alt="AI tutor" width="320"> |
+| Auto knowledge linking | Explains & quizzes from your notes |
 
-### 🎨 Omphalos Aesthetic
-Pink `#FF6B9D` / purple `#B794F6` / blue `#4292F6` + gold accents, Bento card layout, inline-SVG animated logo & nav icons — **fully code-drawn, zero image assets**, even the icons breathe. There's also a "Blacktide Erosion" skin page with ink devouring, rising black flames, and gold-red sacred fires — all rendered in real-time CSS/SVG.
+| Immersive Review | Blacktide Erosion · Skin |
+|:---:|:---:|
+| <img src="docs/screenshots/04-review.png" alt="Immersive review" width="320"> | <img src="docs/screenshots/06-heirs.png" alt="Blacktide erosion skin" width="320"> |
+| Review once, remember it | Ink erosion · gold-red flames · embers |
 
-### 🕸️ Knowledge Web (万帷网)
-Learned knowledge points auto-link into a web, searchable across courses. Review is no longer needle-in-a-haystack — just follow the threads.
+| Settings | |
+|:---:|:---:|
+| <img src="docs/screenshots/07-settings.png" alt="Settings" width="320"> | <img src="docs/ui-screenshots/omphalos-skin-concept.jpg" alt="Omphalos skin concept" width="320"> |
+| AI · voice · appearance · recording | Skins are the real deal 🎨 |
 
-### 🔁 Review Loop
-AI-generated quizzes, immersive review mode, due reminders (checked hourly). Learn it, review it, keep it.
-
-### 🎙️ Voice Loop
-Follow-capture audio can be transcribed locally (faster-whisper), or read aloud via Windows TTS — review even while walking.
-
-### 📊 Study Dashboard
-Study time, note counts, review progress, weekly reports... data visualization that makes your effort visible.
+</div>
 
 ---
 
-## 🚀 Quick Start
+## 🚀 60-Second Start
 
 ```bash
-# Install dependencies
 cd app
-npm install
-
-# Production run
-npm run build
-npm start
-
-# Development mode (hot reload)
-npm run electron:dev
+npm install        # install dependencies
+npm run build      # production build
+npm start          # run!
 ```
 
-> Windows users can also double-click `启动.bat` in the root folder to launch with one click.
+> Windows shortcut: double-click `启动.bat` in the root folder.
 
-**First run**: open **Settings**, configure AI (cloud API key or local Ollama), then hit the floating bubble to record. Let it do the rest (๑•̀ㅂ•́)و✧
+**First run**: open **Settings**, set up AI (cloud API key / local Ollama), then hit the floating bubble to record — let it do the rest (๑•̀ㅂ•́)و✧
 
 ---
 
-## 🧠 Local AI Models (optional)
+## 🧠 Local AI (optional)
 
-If you want local mode, pull the models yourself:
+Want data to stay completely on-device? Pull three models:
 
 ```bash
-ollama pull moondream            # Vision: understand follow-capture frames
+ollama pull moondream            # Vision: understand frames on your screen
 ollama pull qwen2.5:7b-instruct  # Text: chat / summary / quizzes / weekly reports
-ollama pull nomic-embed-text     # Embeddings: knowledge graph linking
+ollama pull nomic-embed-text     # Embeddings: weave knowledge into the web
 ```
 
 No model? No problem — follow-capture gracefully degrades to "screenshot saved". Recording never blocks, and you can run recognition later.
@@ -143,40 +138,22 @@ No model? No problem — follow-capture gracefully degrades to "screenshot saved
 
 | Layer | Choice |
 |---|---|
-| Renderer | Vue 3 + TypeScript + Vite |
-| Desktop shell | Electron (main process loads source directly, edits take effect on restart) |
-| Note rendering | Markdown + KaTeX (math support) |
+| Renderer | Vue 3 · TypeScript · Vite |
+| Desktop shell | Electron (main process loads source directly) |
+| Note rendering | Markdown · KaTeX math |
 | Cloud AI | DeepSeek / Volcengine |
 | Local AI | Ollama: moondream / qwen2.5 / nomic |
-| Speech-to-text | Python + faster-whisper |
-| Text-to-speech | Windows SAPI |
+| STT / TTS | faster-whisper · Windows SAPI |
 | Storage | Local JSON + image/video files |
 
 ---
 
 ## ⚙️ Requirements
 
-- **Windows 10/11 64-bit** (floating bubble, recording & voice loop rely on Windows)
+- **Windows 10/11 64-bit** (floating bubble, recording & voice rely on Windows)
 - **Node.js ≥ 18**
 - **(Optional) Ollama** — without it, use cloud mode
-- **(Optional) Python + ffmpeg** — for audio transcription; bundled in portable release
-
----
-
-## 📂 Directory Structure
-
-```
-.
-├─ app/          # Electron application
-│  ├─ electron/  #   Main process, IPC, bubble, follow-capture, AI calls
-│  ├─ src/       #   Vue 3 renderer (views / components / store)
-│  └─ public/    #   Static assets
-├─ build/        # Build resources (icons, launcher, etc.)
-├─ docs/         # Screenshots
-└─ *.bat         # Windows launcher scripts
-```
-
-> Runtime & internal directories (`data / logs / vendor / Ollama / 技术文档`) are excluded via `.gitignore`.
+- **(Optional) Python + ffmpeg** — audio transcription; bundled in portable build
 
 ---
 
@@ -184,8 +161,22 @@ No model? No problem — follow-capture gracefully degrades to "screenshot saved
 
 - 🎨 More theme skins (skins are the real deal!)
 - 🍎 macOS / Linux support
-- 📝 Note templates & share-card generation
+- 📝 Note templates & share cards
 - ☁️ Cloud sync (opt-in, off by default, preserving local-first)
+
+---
+
+## 💭 Why build this?
+
+I built NoteStar because I believe: **AI is a tool to assist learning, not replace it.**
+
+AI evolves fast and knows more every day. But **what AI knows doesn't mean you know it.**
+
+So this app was never meant to "let AI learn the course for you." It automates the tedious, time-consuming parts — recording, organizing, reviewing — so you can spend the time you save on actually **understanding and thinking**.
+
+Follow-capture keeps you from missing key points, the graph links knowledge together, quizzes test what you've mastered — but in the end, the one sitting in front of the screen, turning knowledge into your own, is you.
+
+May this small toolkit carry you a little further ✨
 
 ---
 
@@ -193,7 +184,7 @@ No model? No problem — follow-capture gracefully degrades to "screenshot saved
 
 <div align="center">
 
-[<img width="120" height="120" src="docs/author-avatar.jpg" style="border-radius:50%" alt="星萌Y小郭酱">](https://space.bilibili.com/12644772)
+[<img width="96" height="96" style="border-radius:50%" src="docs/author-avatar.jpg" alt="星萌Y小郭酱">](https://space.bilibili.com/12644772)
 
 **星萌Y小郭酱 (Xingmeng Y Xiaoguo Jiang)**
 
@@ -201,23 +192,9 @@ Bilibili creator · Anime / Blender NPR / indie dev
 
 📺 [Visit my Bilibili Space](https://space.bilibili.com/12644772)
 
-If this project helps you, star the repo ⭐ or come say hi on Bilibili~
+Liked it? Drop a **Star ⭐** or come say hi on Bilibili~
 
 </div>
-
----
-
-## 💭 Why build this?
-
-I built NoteStar because I believe one thing: **AI is a tool to assist learning, not replace it.**
-
-AI evolves fast and knows more every day. But what AI knows doesn't mean you know it.
-
-So this app was never meant to "let AI learn the course for you." It automates the tedious, time-consuming parts — recording, organizing, reviewing — so you can spend the time and energy you save on actually **understanding and thinking**.
-
-Follow-capture makes sure you don't miss key points, the graph links knowledge together, quizzes test what you've mastered — but in the end, the one sitting in front of the screen, turning knowledge into your own, is you.
-
-May this tool carry you a little further ✨
 
 ---
 
