@@ -66,6 +66,10 @@ ardot-bulk-theme-cards.zip
 
 # 内部开发文档（不随开源发布）
 测试文档/
+技术文档/
+docs/录屏功能技术总结.md
+docs/笔记星图-项目整体框架与入口函数全景文档.md
+docs/ui-screenshots/00-README.md
 
 # 用户数据与本地备份（含隐私，绝不随开源上传）
 app/userdata/
