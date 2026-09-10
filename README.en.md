@@ -21,6 +21,8 @@
 
 </div>
 
+<img width="34" height="34" align="left" style="border-radius:50%" src="docs/author-avatar.jpg" alt="星萌Y小郭酱">
+
 > **👤 Author**: [星萌Y小郭酱](https://space.bilibili.com/12644772) · Bilibili creator · Anime / Blender NPR / indie dev
 >
 > **🌐 Language / 语言： [English](README.en.md) · [中文](README.md)**
@@ -189,11 +191,19 @@ No model? No problem — follow-capture gracefully degrades to "screenshot saved
 
 ## 👤 Author
 
-**星萌Y小郭酱 (Xingmeng Y Xiaoguo Jiang)**, Bilibili creator (uid 12644772)
+<div align="center">
 
-📺 [Bilibili Space](https://space.bilibili.com/12644772) — Anime / Blender NPR / indie dev
+[<img width="120" height="120" src="docs/author-avatar.jpg" style="border-radius:50%" alt="星萌Y小郭酱">](https://space.bilibili.com/12644772)
+
+**星萌Y小郭酱 (Xingmeng Y Xiaoguo Jiang)**
+
+Bilibili creator · Anime / Blender NPR / indie dev
+
+📺 [Visit my Bilibili Space](https://space.bilibili.com/12644772)
 
 If this project helps you, star the repo ⭐ or come say hi on Bilibili~
+
+</div>
 
 ---
 

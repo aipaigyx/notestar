@@ -21,6 +21,8 @@
 
 </div>
 
+<img width="34" height="34" align="left" style="border-radius:50%" src="docs/author-avatar.jpg" alt="星萌Y小郭酱">
+
 > **👤 作者**：[星萌Y小郭酱](https://space.bilibili.com/12644772) · B 站 UP 主 · 二次元 / Blender 三渲二 / 独立开发
 >
 > **🌐 Language / 语言： [中文](README.md) · [English](README.en.md)**
@@ -189,11 +191,19 @@ ollama pull nomic-embed-text     # 向量：知识图谱关联
 
 ## 👤 作者
 
-B 站 UP 主 **星萌Y小郭酱**（uid 12644772）
+<div align="center">
 
-📺 [哔哩哔哩空间](https://space.bilibili.com/12644772) — 二次元 / Blender 三渲二 / 独立开发
+[<img width="120" height="120" src="docs/author-avatar.jpg" style="border-radius:50%" alt="星萌Y小郭酱">](https://space.bilibili.com/12644772)
+
+**星萌Y小郭酱**
+
+B 站 UP 主 · 二次元 / Blender 三渲二 / 独立开发
+
+📺 [进我的哔哩哔哩空间](https://space.bilibili.com/12644772)
 
 觉得这个项目对你有帮助的话，欢迎 Star ⭐ 或者来 B 站找我玩呀~
+
+</div>
 
 ---
 
