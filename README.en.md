@@ -83,7 +83,7 @@ A system-level desktop floating bubble for one-click recording. AI captures & re
 Switch anytime, use whichever you prefer.
 
 ### 🔒 Your Data, Your Rules
-Notes, screenshots & recordings all live on your disk (default `app/data`). In local mode, AI requests only go to `127.0.0.1` — nothing is uploaded. Want a full wipe? Just delete `app/data`.
+Notes, screenshots & recordings all live on your own disk. In local mode, nothing leaves your machine.
 
 ### 🎨 Omphalos Aesthetic
 Pink `#FF6B9D` / purple `#B794F6` / blue `#4292F6` + gold accents, Bento card layout, inline-SVG animated logo & nav icons — **fully code-drawn, zero image assets**, even the icons breathe. There's also a "Blacktide Erosion" skin page with ink devouring, rising black flames, and gold-red sacred fires — all rendered in real-time CSS/SVG.
@@ -194,6 +194,20 @@ No model? No problem — follow-capture gracefully degrades to "screenshot saved
 📺 [Bilibili Space](https://space.bilibili.com/12644772) — Anime / Blender NPR / indie dev
 
 If this project helps you, star the repo ⭐ or come say hi on Bilibili~
+
+---
+
+## 💭 Why build this?
+
+I built NoteStar because I believe one thing: **AI is a tool to assist learning, not replace it.**
+
+AI evolves fast and knows more every day. But what AI knows doesn't mean you know it.
+
+So this app was never meant to "let AI learn the course for you." It automates the tedious, time-consuming parts — recording, organizing, reviewing — so you can spend the time and energy you save on actually **understanding and thinking**.
+
+Follow-capture makes sure you don't miss key points, the graph links knowledge together, quizzes test what you've mastered — but in the end, the one sitting in front of the screen, turning knowledge into your own, is you.
+
+May this tool carry you a little further ✨
 
 ---
 
