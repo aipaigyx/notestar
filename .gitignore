@@ -1,0 +1,74 @@
+# 依赖与构建产物
+node_modules/
+app/node_modules/
+app/dist/
+app/dist-old-*/
+dist/
+dist-packages/
+
+# 运行时数据与日志
+app/data/
+app/logs/
+logs/
+
+# 内置运行时环境（whisper 模型 / 本地模型 / python）
+app/vendor/
+Ollama/
+
+# 旧版本备份目录
+app2/
+
+# 调试与临时
+.workbuddy/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
+
+# 系统与 IDE
+.vscode/
+.idea/
+app/debug.log
+笔记星图.exe
+app/release/
+app/userdata/
+
+# PyInstaller 打包中间产物（不进仓库）
+build/build/
+build/dist/
+build/pyinstaller-work/
+build/mini-test/run.log
+
+# 与 gitignore 保持一致的调试与临时残留
+app/dist-tmp/
+app/test-ipc/
+app/screenshot_sidebar.png
+dev-stdout.log
+dev-stderr.log
+*.bak-*
+
+# 构建验证目录（含构建产物，不进仓库）
+app/verify-dist*/
+app/dist-electron/
+
+# 本地 IDE / 技能配置（含本机路径，不对外）
+.trae/
+.workbuddy/
+
+# 作者本地发行工具（含本机路径，不对外）
+一键发行打包.bat
+重建启动器.bat
+
+# Ardot 皮肤导出物与技能副本（非 app 工程文件）
+outputs/
+ardot-bulk-theme-cards.zip
+
+# 内部开发文档（不随开源发布）
+测试文档/
+
+# 用户数据与本地备份（含隐私，绝不随开源上传）
+app/userdata/
+app/userdata-*/
+app/data/
+app/logs/
