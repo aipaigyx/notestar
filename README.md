@@ -1,5 +1,7 @@
 <div align="center">
 
+![笔记星图 NoteStar](docs/cover.jpg)
+
 # 🌌 笔记星图 · NoteStar
 
 ### 把网课，变成一场翁法罗斯的冒险 ✨
@@ -123,7 +125,7 @@ ollama pull nomic-embed-text     # 向量：知识关联
 ├─ app/          # Electron 应用主体
 │  ├─ electron/  #   主进程、IPC、悬浮球、跟拍、AI
 │  └─ src/       #   Vue 3 渲染层
-├─ docs/         # 技术文档
+├─ docs/         # 截图资源
 └─ 启动*.bat     # Windows 一键启动
 ```
 
