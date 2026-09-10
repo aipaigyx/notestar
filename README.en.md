@@ -1,5 +1,7 @@
 <div align="center">
 
+![NoteStar](docs/cover.jpg)
+
 # 🌌 NoteStar · 笔记星图
 
 ### Turn online courses into an Omphalos adventure ✨
@@ -123,7 +125,7 @@ No model? No problem — follow-capture gracefully degrades to screenshot-only, 
 ├─ app/          # Electron application
 │  ├─ electron/  #   Main process, IPC, bubble, follow-capture, AI
 │  └─ src/       #   Vue 3 renderer
-├─ docs/         # Technical docs
+├─ docs/         # Screenshots
 └─ *.bat         # Windows launchers
 ```
 
