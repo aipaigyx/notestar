@@ -77,6 +77,33 @@ B 站 UP 主 · 二次元 / Blender 三渲二 / 独立开发
 
 ---
 
+## 🎬 视频介绍
+
+<div align="center">
+
+<details open>
+<summary><strong>▶ 点击播放 B 站介绍视频</strong> · BV1eWY76xEG5</summary>
+
+<br>
+
+<iframe
+  src="https://player.bilibili.com/player.html?isOutside=true&aid=117252120649017&bvid=BV1eWY76xEG5&cid=41789885335&p=1&autoplay=0"
+  scrolling="no"
+  border="0"
+  frameborder="no"
+  framespacing="0"
+  allowfullscreen="true"
+  style="width:100%;max-width:720px;height:480px;border-radius:12px;display:block;margin:0 auto;"
+></iframe>
+
+<p align="center"><a href="https://www.bilibili.com/video/BV1eWY76xEG5" target="_blank">📺 去 B 站原页面观看</a></p>
+
+</details>
+
+</div>
+
+---
+
 ## 🖼️ 长这样
 
 <div align="center">
