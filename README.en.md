@@ -77,6 +77,20 @@ Click the floating bubble to start recording — AI quietly grabs a frame now an
 
 ---
 
+## 🎬 Video Intro
+
+<div align="center">
+
+[![Watch the intro on Bilibili](docs/video-cover.jpg)](https://www.bilibili.com/video/BV1eWY76xEG5)
+
+**📺 Click the cover to watch on Bilibili · 20 min**
+
+> Rediscover how to take notes during online classes, in the name of Omphalos.
+
+</div>
+
+---
+
 ## 🖼️ Showcase
 
 <div align="center">
