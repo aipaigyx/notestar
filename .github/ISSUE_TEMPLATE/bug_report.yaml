@@ -1,0 +1,36 @@
+name: 🐛 Bug 报告
+description: 程序崩溃、功能异常、显示错乱等问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么？
+      description: 清晰描述你遇到的问题
+      placeholder: |
+        1. 打开...
+        2. 点击...
+        3. 然后就崩了 / 显示不对...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      placeholder: 你觉得应该发生什么？
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      placeholder: 例：v1.0.0
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: 例：Windows 11 23H2
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图
+      description: 如果有崩溃日志或截图，请贴在这里
