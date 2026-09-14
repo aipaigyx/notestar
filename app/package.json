@@ -1,6 +1,6 @@
 {
   "name": "notestar",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "笔记星图 - AI 驱动的智能笔记管理工具",
   "author": "NoteStar",
   "main": "electron/main.cjs",
@@ -40,8 +40,8 @@
     "productName": "笔记星图",
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
-      "repo": "YOUR_REPO_NAME",
+      "owner": "aipaigyx",
+      "repo": "notestar",
       "releaseType": "release"
     },
     "directories": {

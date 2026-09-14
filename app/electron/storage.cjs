@@ -2,7 +2,11 @@
 const path = require('path')
 const fs = require('fs')
 
-const dataDir = path.join(__dirname, '..', 'data')
+// 运行时数据根：打包后（asar）__dirname 指向只读归档，无法写入；
+// 由 main.cjs 通过 NOTESTAR_RUNTIME_ROOT 指向可写 userData 目录。
+// 开发/便携模式回退到项目根（app/ 上级），保持 data 在项目内。
+const runtimeRoot = process.env.NOTESTAR_RUNTIME_ROOT || path.join(__dirname, '..')
+const dataDir = path.join(runtimeRoot, 'data')
 const notesFile = path.join(dataDir, 'notes.json')
 const coursesFile = path.join(dataDir, 'courses.json')
 const chatFile = path.join(dataDir, 'chatSessions.json')

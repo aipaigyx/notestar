@@ -30,10 +30,19 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'notestar-rec', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, bypassCSP: true, corsEnabled: true } },
 ])
 
+// ========== 运行时持久化根目录 ==========
+// 打包后 __dirname 指向只读归档 app.asar（resources/app.asar/electron），
+// 在其内 mkdir/write 必然抛 ENOTDIR（不是目录），导致启动即崩。
+// 故打包后 data/logs/userdata 改存可写的 userData；开发/便携模式仍用项目根。
+const RUNTIME_PERSIST_ROOT = app.isPackaged
+  ? app.getPath('userData')
+  : path.join(__dirname, '..')
+process.env.NOTESTAR_RUNTIME_ROOT = RUNTIME_PERSIST_ROOT
+
 // ========== 日志系统 ==========
 let mainWindow = null  // 提前声明，避免 TDZ 问题
 
-const logDir = path.join(__dirname, '..', 'logs')
+const logDir = path.join(RUNTIME_PERSIST_ROOT, 'logs')
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true })
 
 const LOG_LEVELS = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 }
@@ -156,8 +165,11 @@ function getProxyAgent() {
   return null
 }
 
-// 重定向用户数据目录到项目文件夹。可通过环境变量使用独立运行缓存，不影响 app/data 中的笔记数据。
-const localUserData = process.env.NOTESTAR_USERDATA_DIR || path.join(__dirname, '..', 'userdata')
+// 重定向用户数据目录到项目文件夹。可用环境变量 NOTESTAR_USERDATA_DIR 使用独立运行缓存。
+// 打包后 __dirname 指向只读 asar，userData 直接用 RUNTIME_PERSIST_ROOT 指向的可写 userData 目录，不再重定向。
+const localUserData = app.isPackaged
+  ? RUNTIME_PERSIST_ROOT
+  : (process.env.NOTESTAR_USERDATA_DIR || path.join(RUNTIME_PERSIST_ROOT, 'userdata'))
 if (!fs.existsSync(localUserData)) fs.mkdirSync(localUserData, { recursive: true })
 app.setPath('userData', localUserData)
 
