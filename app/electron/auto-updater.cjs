@@ -10,7 +10,7 @@
 //   UPDATE_FEED_URL          — 自定义更新源 URL（非 GitHub 时使用）
 
 const { autoUpdater } = require('electron-updater')
-const { ipcMain, BrowserWindow } = require('electron')
+const { app, ipcMain, BrowserWindow } = require('electron')
 
 // 内部日志：electron-updater 的 logger 接口用 console 实现即可，不依赖外部日志模块
 const log = {
@@ -102,9 +102,23 @@ function setupIpc() {
   // 检查更新
   ipcMain.handle('update:check', async () => {
     try {
+      // 未打包（开发/源码运行）：electron-updater 会直接 skip 且不触发任何事件，
+      // 导致 isChecking 永远停在 true、前端一直转。此处主动归一为"已是最新"。
+      if (app && app.isPackaged === false) {
+        isChecking = false
+        updateInfo = null
+        updateDownloaded = false
+        downloadProgress = 0
+        log.info('开发模式：跳过自动更新检查（应用未打包，更新仅对 Release 版生效）')
+        broadcastUpdateStatus()
+        return { ok: false, error: 'DEV_MODE_NO_UPDATES' }
+      }
       isChecking = true
       broadcastUpdateStatus()
       await autoUpdater.checkForUpdates()
+      // 兜底复位：部分异常/跳过路径下 electron-updater 不会触发终止事件，避免 UI 卡在检查中
+      isChecking = false
+      broadcastUpdateStatus()
       return { ok: true }
     } catch (e) {
       isChecking = false
@@ -133,9 +147,14 @@ function setupIpc() {
   // 静默检查（启动时后台检查，不弹窗）
   ipcMain.handle('update:silentCheck', async () => {
     try {
+      if (app && app.isPackaged === false) return { ok: true, skipped: true }
       await autoUpdater.checkForUpdates()
+      isChecking = false
+      broadcastUpdateStatus()
       return { ok: true }
     } catch (_) {
+      isChecking = false
+      broadcastUpdateStatus()
       return { ok: false }
     }
   })
@@ -156,6 +175,12 @@ function setupIpc() {
 function startAutoCheck() {
   log.info('启动自动更新模块')
   setupIpc()
+
+  // 未打包（开发/源码运行）不进行后台静默检查
+  if (app && app.isPackaged === false) {
+    log.info('开发模式：跳过后台自动更新检查')
+    return
+  }
 
   // 延迟 5 秒后静默检查，避免影响启动性能
   setTimeout(() => {

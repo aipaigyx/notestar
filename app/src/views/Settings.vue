@@ -564,6 +564,27 @@ const updateStatus = ref({
 })
 
 let unsubUpdateStatus: (() => void) | null = null
+let promptedVersion = ''   // 已弹过选择框的版本，避免重复弹
+
+// 发现新版本 → 弹「立即更新 / 忽略」选择框（非强制更新）
+const showUpdateDialog = async (version: string, notes?: string) => {
+  const ok = await showConfirm({
+    title: `发现新版本 v${version}`,
+    message: notes
+      ? `已发现新版本 v${version}，是否立即下载并安装？\n\n更新说明：${notes}\n\n选择「忽略」后可稍后在下方「下载更新」处继续。`
+      : `已发现新版本 v${version}，是否立即下载并安装？\n\n选择「忽略」后可稍后在下方「下载更新」处继续。`,
+    confirmText: '立即更新',
+    cancelText: '忽略',
+  })
+  if (ok) {
+    try {
+      await downloadUpdate()
+      showToast('已开始下载更新', 'success')
+    } catch (_) {
+      showToast('下载更新失败，请稍后重试', 'error')
+    }
+  }
+}
 
 const checkUpdate = async () => {
   try {
@@ -587,6 +608,12 @@ if (isElectron) {
   // 监听更新状态
   unsubUpdateStatus = window.noteAPI.onUpdateStatus((status: any) => {
     updateStatus.value = { ...updateStatus.value, ...status }
+    // 发现新版本 → 弹「立即更新 / 忽略」选择框（非强制；忽略后仍可用手动按钮）
+    const s = status as { updateAvailable?: boolean; updateDownloaded?: boolean; version?: string; releaseNotes?: string }
+    if (s.updateAvailable && !s.updateDownloaded && s.version && s.version !== promptedVersion) {
+      promptedVersion = s.version
+      showUpdateDialog(s.version, s.releaseNotes)
+    }
   })
   // 获取当前版本号
   if (window.noteAPI.getAppVersion) {
